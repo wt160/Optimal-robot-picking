@@ -1,0 +1,52 @@
+solving 1 case
+makespanLength: 1417.37
+optimalRatio is 1.96024
+makespanLength: 1543.02
+optimalRatio is 2.13401
+solving 2 case
+makespanLength: 1356.61
+optimalRatio is 1.78957
+makespanLength: 1230.96
+optimalRatio is 1.62381
+solving 3 case
+makespanLength: 1183.42
+optimalRatio is 1.80334
+makespanLength: 1183.42
+optimalRatio is 1.80334
+solving 4 case
+makespanLength: 1308.76
+optimalRatio is 1.87601
+makespanLength: 1434.41
+optimalRatio is 2.05612
+solving 5 case
+makespanLength: 1230.95
+optimalRatio is 1.68881
+makespanLength: 1398.48
+optimalRatio is 1.91866
+solving 6 case
+makespanLength: 1196.09
+optimalRatio is 1.87059
+makespanLength: 1321.75
+optimalRatio is 2.06709
+solving 7 case
+makespanLength: 1229.55
+optimalRatio is 1.68647
+makespanLength: 1564.62
+optimalRatio is 2.14605
+solving 8 case
+makespanLength: 1306.04
+optimalRatio is 1.40668
+makespanLength: 1306.04
+optimalRatio is 1.40668
+solving 9 case
+makespanLength: 1437.98
+optimalRatio is 2.10562
+makespanLength: 1396.1
+optimalRatio is 2.04429
+solving 10 case
+makespanLength: 1368.14
+optimalRatio is 1.65877
+makespanLength: 1493.79
+optimalRatio is 1.81111
+connection optimal ratio average:1.78461
+no connection optimal ratio average:1.90112

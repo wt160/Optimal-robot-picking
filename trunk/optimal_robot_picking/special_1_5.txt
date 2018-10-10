@@ -1,0 +1,134 @@
+solving 1 case
+connection case:
+makespanLength: 845.295
+smoothLength: 771.286
+visibilityLength:574.768
+makespan optimalRatio is 1.47067
+smooth makespan optimalRatio is 1.34191
+noconnection case:
+makespanLength: 929.062
+smoothLength: 797.759
+visibilityLength:  574.768
+makespan optimalRatio is 1.61641
+smooth makespan optimalRatio is 1.38797
+solving 2 case
+connection case:
+makespanLength: 1088.75
+smoothLength: 991.375
+visibilityLength:669.901
+makespan optimalRatio is 1.62525
+smooth makespan optimalRatio is 1.47988
+noconnection case:
+makespanLength: 1256.29
+smoothLength: 1101.67
+visibilityLength:  669.901
+makespan optimalRatio is 1.87534
+smooth makespan optimalRatio is 1.64452
+solving 3 case
+connection case:
+makespanLength: 941.815
+smoothLength: 860.016
+visibilityLength:711.66
+makespan optimalRatio is 1.32341
+smooth makespan optimalRatio is 1.20846
+noconnection case:
+makespanLength: 1025.58
+smoothLength: 873.736
+visibilityLength:  711.66
+makespan optimalRatio is 1.44111
+smooth makespan optimalRatio is 1.22774
+solving 4 case
+connection case:
+makespanLength: 1425.56
+smoothLength: 1297.02
+visibilityLength:715.476
+makespan optimalRatio is 1.99247
+smooth makespan optimalRatio is 1.81281
+noconnection case:
+makespanLength: 1509.33
+smoothLength: 1329.6
+visibilityLength:  715.476
+makespan optimalRatio is 2.10954
+smooth makespan optimalRatio is 1.85834
+solving 5 case
+connection case:
+makespanLength: 1352.15
+smoothLength: 1231.4
+visibilityLength:876.129
+makespan optimalRatio is 1.54332
+smooth makespan optimalRatio is 1.4055
+noconnection case:
+makespanLength: 1352.15
+smoothLength: 1177.64
+visibilityLength:  876.129
+makespan optimalRatio is 1.54332
+smooth makespan optimalRatio is 1.34415
+solving 6 case
+connection case:
+makespanLength: 1231.62
+smoothLength: 1122.55
+visibilityLength:759.535
+makespan optimalRatio is 1.62154
+smooth makespan optimalRatio is 1.47795
+noconnection case:
+makespanLength: 1147.85
+smoothLength: 987.702
+visibilityLength:  759.535
+makespan optimalRatio is 1.51126
+smooth makespan optimalRatio is 1.3004
+solving 7 case
+connection case:
+makespanLength: 1295.36
+smoothLength: 1178.5
+visibilityLength:774.364
+makespan optimalRatio is 1.6728
+smooth makespan optimalRatio is 1.52189
+noconnection case:
+makespanLength: 1421.01
+smoothLength: 1253.62
+visibilityLength:  774.364
+makespan optimalRatio is 1.83506
+smooth makespan optimalRatio is 1.6189
+solving 8 case
+connection case:
+makespanLength: 1177.72
+smoothLength: 1072.55
+visibilityLength:666.754
+makespan optimalRatio is 1.76634
+smooth makespan optimalRatio is 1.60861
+noconnection case:
+makespanLength: 1345.25
+smoothLength: 1177.64
+visibilityLength:  666.754
+makespan optimalRatio is 2.01761
+smooth makespan optimalRatio is 1.76624
+solving 9 case
+connection case:
+makespanLength: 1009.44
+smoothLength: 919.853
+visibilityLength:606.862
+makespan optimalRatio is 1.66338
+smooth makespan optimalRatio is 1.51575
+noconnection case:
+makespanLength: 1093.21
+smoothLength: 949.713
+visibilityLength:  606.862
+makespan optimalRatio is 1.80141
+smooth makespan optimalRatio is 1.56496
+solving 10 case
+connection case:
+makespanLength: 1103.05
+smoothLength: 1005.67
+visibilityLength:762.749
+makespan optimalRatio is 1.44616
+smooth makespan optimalRatio is 1.31849
+noconnection case:
+makespanLength: 1312.47
+smoothLength: 1139.66
+visibilityLength:  762.749
+makespan optimalRatio is 1.72071
+smooth makespan optimalRatio is 1.49414
+makespan connection optimal ratio average:1.61253
+makespan no connection optimal ratio average:1.74718
+smooth connection optimal ratio average:1.46913
+smooth no connection optimal ratio average:1.52074

@@ -4,7 +4,7 @@
 
 #ifndef __RRTS_H_
 #define __RRTS_H_
-
+#define REWIRE_THRESHOLD 5
 
 #include "kdtree.h"
 
@@ -142,6 +142,8 @@ namespace RRTstar {
         int updateBranchCost (vertex_t& vertexIn, int depth);    
         int rewireVertices (vertex_t& vertexNew, std::vector<vertex_t*>& vectorNearVertices); 
 		int temp_rewireVertices(vertex_t& vertexNew, std::vector<vertex_t*>& vectorNearVertices);
+		int temp_rewireVerticesRecursive(vertex_t& vertexNew, std::vector< vertex_t* >& vectorNearVertices);
+
 		vertex_t* temp_insertTrajectory(vertex_t& vertexStartIn, Trajectory& trajectoryIn);
 		int temp_insertTrajectory(vertex_t& vertexStartIn, Trajectory& trajectoryIn, vertex_t& vertexEndIn);
 		int temp_insertIntoKdtree(vertex_t &vertexIn);

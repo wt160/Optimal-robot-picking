@@ -35,8 +35,10 @@ RRTstar::Vertex<State, Trajectory, System>
     if (state)
         delete state;
     parent = NULL;
-    if (trajFromParent)
-        delete trajFromParent;
+	if (trajFromParent) {
+		delete trajFromParent;
+		trajFromParent = NULL;
+	}
     children.clear();
 }
 
@@ -231,7 +233,7 @@ RRTstar::Planner<State, Trajectory, System>
 
 	// Compute the ball radius
 	double ballRadius = gamma * pow(log((double)(numVertices + 1.0)) / ((double)(numVertices + 1.0)), 1.0 / ((double)numDimensions));
-	ballRadius = ballRadius * 5;
+	ballRadius = ballRadius * 3;
 	// Search kdtree for the set of near vertices
 	KdRes *kdres = kd_nearest_range(kdtree, stateKey, ballRadius);
 	delete[] stateKey;
@@ -354,6 +356,14 @@ RRTstar::Planner<State, Trajectory, System>
 		}
 	}
 
+	if ((temp_add_vertices.find(&vertexStartIn) == temp_add_vertices.end())) {
+		if (temp_rewired_vertices.find(&vertexEndIn) == temp_rewired_vertices.end()) {
+			temp_rewired_vertices.insert(&vertexEndIn);
+			temp_rewired_old_parent[&vertexEndIn] = vertexEndIn.parent;
+			temp_rewired_old_cost[&vertexEndIn] = vertexEndIn.costFromRoot;
+			temp_rewired_old_costfromparent[&vertexEndIn] = vertexEndIn.costFromParent;
+		}
+	}
 	// Update the costs
 	vertexEndIn.costFromParent = trajectoryIn.evaluateCost();
 	vertexEndIn.costFromRoot = vertexStartIn.costFromRoot + vertexEndIn.costFromParent;
@@ -366,8 +376,10 @@ RRTstar::Planner<State, Trajectory, System>
 
 
 	// Update the trajectory between the two vertices
-	if (vertexEndIn.trajFromParent)
+	if (vertexEndIn.trajFromParent) {
 		delete vertexEndIn.trajFromParent;
+		vertexEndIn.trajFromParent = NULL;
+	}
 	vertexEndIn.trajFromParent = new Trajectory(trajectoryIn);
 
 	// Update the parent to the end vertex
@@ -392,8 +404,10 @@ RRTstar::Planner<State, Trajectory, System>
     checkUpdateBestVertex (vertexEndIn);
     
     // Update the trajectory between the two vertices
-    if (vertexEndIn.trajFromParent)
-        delete vertexEndIn.trajFromParent;
+	if (vertexEndIn.trajFromParent) {
+		delete vertexEndIn.trajFromParent;
+		
+	}
     vertexEndIn.trajFromParent = new Trajectory (trajectoryIn);
     
     // Update the parent to the end vertex
@@ -677,6 +691,73 @@ RRTstar::Planner<State, Trajectory, System>
 	return 1;
 }
 
+template<class State, class Trajectory, class System>
+int
+RRTstar::Planner<State, Trajectory, System>
+::temp_rewireVerticesRecursive(Vertex<State, Trajectory, System>& vertexNew, std::vector< Vertex<State, Trajectory, System>* >& vectorNearVertices) {
+
+	int rewire_num = 0;
+	int recursive_branch_num = 1;
+	std::map<Vertex<State, Trajectory, System>*, double> recursive_map;
+	std::vector<Vertex<State, Trajectory, System>*> final_recursive_list;
+
+	// Repeat for all vertices in the set of near vertices
+	for (typename std::vector< Vertex<State, Trajectory, System>* >::iterator iter = vectorNearVertices.begin(); iter != vectorNearVertices.end(); iter++) {
+
+		Vertex<State, Trajectory, System>& vertexCurr = **iter;
+
+		// Check whether the extension results in an exact connection
+		bool exactConnection = false;
+		double costCurr = system->evaluateExtensionCost(*(vertexNew.state), *(vertexCurr.state), exactConnection);
+		if ((exactConnection == false) || (costCurr < 0))
+			continue;
+
+		// Check whether the cost of the extension is smaller than current cost
+		double totalCost = vertexNew.costFromRoot + costCurr;
+		if (totalCost < vertexCurr.costFromRoot - 0.001) {
+			rewire_num++;
+			recursive_map[*iter] = costCurr;
+			// Compute the extension (checking for collision)
+			Trajectory trajectory;
+			if (system->extendTo(*(vertexNew.state), *(vertexCurr.state), trajectory, exactConnection) <= 0)
+				continue;
+
+			// Insert the new trajectory to the tree by rewiring
+			temp_insertTrajectory(vertexNew, trajectory, vertexCurr);
+
+			// Update the cost of all vertices in the rewired branch
+			updateBranchCost(vertexCurr, 0);
+		}
+
+	}
+	std::cout << "recursive_rewire" << " ";
+	std::cout << "recursive_size:" << recursive_map.size() << std::endl;
+	if (recursive_map.size() < REWIRE_THRESHOLD) {
+		return 1;
+	}
+	for (int j = 0; j < recursive_branch_num; j++) {
+		double max_dist = -1;
+		Vertex<State, Trajectory, System>* recursive_vertex;
+		for (auto i = recursive_map.begin(); i != recursive_map.end(); i++) {
+			if (i->second > max_dist) {
+				max_dist = i->second;
+				recursive_vertex = i->first;
+			}
+
+		}
+		recursive_map.erase(recursive_vertex);
+		final_recursive_list.push_back(recursive_vertex);
+	}
+	for(int k = 0; k < final_recursive_list.size(); k++){
+		std::vector< Vertex<State, Trajectory, System>* > vectorNearVertices;
+		State *new_state = final_recursive_list[k]->state;
+		getNearVerticesBig(*new_state, vectorNearVertices);
+		temp_rewireVerticesRecursive(*(final_recursive_list[k]), vectorNearVertices);
+	}
+	//std::cout << "rewire_num:" << rewire_num << std::endl;
+	return 1;
+}
+
 
 template<class State, class Trajectory, class System>
 int 
@@ -919,7 +1000,7 @@ RRTstar::Planner<State, Trajectory, System>
 
 	// 4. Rewire the tree  
 	if (vectorNearVertices.size() > 0)
-		temp_rewireVertices(*vertexNew, vectorNearVertices);
+		temp_rewireVerticesRecursive(*vertexNew, vectorNearVertices);
 
 
 	return 1;
@@ -970,6 +1051,8 @@ RRTstar::Planner<State, Trajectory, System>
 		current_index_--;
 		delete *i;
 	}
+	int q = 0;
+	std::cout << "restore_rewired" << std::endl;
 	for (auto i = temp_rewired_vertices.begin(); i != temp_rewired_vertices.end(); i++) {
 		(*i)->parent = temp_rewired_old_parent[*i];
 		(*i)->costFromRoot = temp_rewired_old_cost[*i];
@@ -979,6 +1062,9 @@ RRTstar::Planner<State, Trajectory, System>
 		(*i)->trajFromParent = new Trajectory(temp_rewired_old_costfromparent[*i], (*i)->getState());
 		(*i)->costFromParent = temp_rewired_old_costfromparent[*i];
 		updateBranchCost(*(*i), 0);
+		std::cout << "q:" << q << std::endl;
+		q++;
+
 	}
 
 	restore_tree(kdtree);

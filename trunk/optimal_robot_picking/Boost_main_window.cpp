@@ -1003,9 +1003,9 @@ void MainWindow::drawBasicEnvironment(){
 
 // get the total distance of removing the objects using greedy algorithm
 void MainWindow::overlayLattice(){
-	m_roadmap.declutterUsingGreedy();
+	//m_roadmap.declutterUsingGreedy();
 	int numberOfPolygons = m_pLineEdit->text().toInt();
-	//m_roadmap.declutterUsingTruncatedTree(numberOfPolygons);
+	m_roadmap.declutterUsingTruncatedTree(numberOfPolygons);
 	//m_roadmap.declutterMultiExitGreedy();
 	//m_roadmap.declutterUsingMultipleGreedy(numberOfPolygons);
 	//m_roadmap.declutterUsingParticleGreedy(numberOfPolygons);

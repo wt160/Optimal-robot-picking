@@ -162,6 +162,8 @@ namespace RRTstar {
 		std::map<vertex_t*, vertex_t*> temp_rewired_old_parent;
 		std::map<vertex_t*, double> temp_rewired_old_cost;
 		std::map<vertex_t*, double> temp_rewired_old_costfromparent;
+		std::map<vertex_t*, vertex_t*> temp_rewired_old_children;
+		std::set<vertex_t*> updated_vertex_list;
 		double debug_time_1;
 		double debug_time_2;
 		double debug_time_3;

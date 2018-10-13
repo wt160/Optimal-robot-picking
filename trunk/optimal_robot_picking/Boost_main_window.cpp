@@ -2673,9 +2673,9 @@ void MainWindow::runTest() {
 	double multiexit_greedy = 0;
 	double multiexit_tree = 0;
 		for(int k = 0; k < 10; k++) {
-			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/25/";
+			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/20/";
 
-			output_filename += ("25_" + std::to_string((long long)k) + ".txt");
+			output_filename += ("20_" + std::to_string((long long)k) + ".txt");
 			readProblemFromFile(output_filename);
 			clock_t t1, t2;
 			float diff = 0;

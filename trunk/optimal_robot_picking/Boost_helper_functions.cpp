@@ -240,6 +240,71 @@ void generatePoly(Polygon_2& result, double center_x, double center_y, double ya
 	bg::correct(result);
 }
 
+void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw, double diff_length, double diff_width) {
+	result.outer().clear();
+	Point_2 upper_right, upper_left, down_right, down_left;
+	double x, y;
+	double length = diff_length / 2.0;  double width = diff_width / 2.0;
+	x = length; y = width;
+	if (std::abs(yaw - 1.57) < 0.001) {
+		/*  
+		upper_right.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		upper_right.set<1>(center_y + sin(yaw)*x + cos(yaw)*y);
+		x = -length; y = width;
+		upper_left.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		upper_left.set<1>(center_y + sin(yaw)*x + cos(yaw)*y);
+		x = length; y = -width;
+		down_right.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		down_right.set<1>(center_y + sin(yaw)*x + cos(yaw)*y);
+		x = -length; y = -width;
+		down_left.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		down_left.set<1>(center_y + sin(yaw)*x + cos(yaw)*y);
+		*/
+		upper_right.set<0>(center_x + y);
+		upper_right.set<1>(center_y - x);
+
+		upper_left.set<0>(center_x - y);
+		upper_left.set<1>(center_y - x);
+
+		down_right.set<0>(center_x + y);
+		down_right.set<1>(center_y + x);
+
+		down_left.set<0>(center_x - y);
+		down_left.set<1>(center_y + x);
+	}
+	else if (std::abs(yaw - 0) < 0.0001) {
+		upper_right.set<0>(center_x + x);
+		upper_right.set<1>(center_y - y);
+		
+		upper_left.set<0>(center_x - x);
+		upper_left.set<1>(center_y - y);
+		
+		down_right.set<0>(center_x + x);
+		down_right.set<1>(center_y + y);
+
+		down_left.set<0>(center_x - x);
+		down_left.set<1>(center_y + y);
+	}
+	else {
+		upper_right.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		upper_right.set<1>(center_y - (sin(yaw)*x + cos(yaw)*y));
+		x = -length; y = width;
+		upper_left.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		upper_left.set<1>(center_y - (sin(yaw)*x + cos(yaw)*y));
+		x = length; y = -width;
+		down_right.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		down_right.set<1>(center_y - (sin(yaw)*x + cos(yaw)*y));
+		x = -length; y = -width;
+		down_left.set<0>(center_x + cos(yaw)*x - sin(yaw)*y);
+		down_left.set<1>(center_y - (sin(yaw)*x + cos(yaw)*y));
+	}
+	bg::append(result.outer(), down_left);
+	bg::append(result.outer(), upper_left);
+	bg::append(result.outer(), upper_right);
+	bg::append(result.outer(), down_right);
+	
+	bg::correct(result);
+}
 
 void convertPolygon2Region(Polygon_2 poly, double& center_x, double& center_y, double& size_x, double& size_y) {
 	//now I assume all the polygons are rectangles, following [0]--downLeft, [1]--upperLeft, [2]--upperRight, [3]--downRight

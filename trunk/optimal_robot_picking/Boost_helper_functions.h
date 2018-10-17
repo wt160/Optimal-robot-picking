@@ -22,7 +22,8 @@ using namespace VisiLibity;
 #define OBJ_LENGTH 145
 //#define ALL_FLAT 
 #define NOT_AXIS_ALIGNED
-
+#define DIFFERENT_SIZE
+#define MIXED_CLUSTER
 //double getTriangleArea(const Point_2& p1, Point_2 p2, Point_2 p3);
 // Populate the polygon as an approximate disc with segments nuber of sides
 //void populateApproximateDisc(Polygon_2 &poly, Point_2 &center, double radius, int segments = 18);
@@ -56,6 +57,7 @@ std::vector<std::vector<int>> generateComb(int K);
 //double getShortestDistance(Polygon_2 p1, Polygon_2 p2, Point_2 & p, Segment_2& s);
 
 void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw);
+void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw, double width, double length);
 
 void getBoundingPoly(Polygon_2& target, Point_2& upper_left, Point_2& upper_right, Point_2& down_left, Point_2& down_right, double dist);
 void convertPolygon2Region(Polygon_2 poly, double& center_x, double& center_y, double& size_x, double& size_y);

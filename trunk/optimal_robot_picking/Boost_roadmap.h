@@ -379,8 +379,9 @@ pair<double, double> getCurveMidPoint(Point_2 start, Point_2 end, Point_2 after)
 	double declutterUsingMCTS(int num_objs);
 	double declutterUsingLocalGreedy(Polygon2_list obs_outer_list, Polygon2_list obs_list);
 	double declutterMultiExitGreedy();
+	double declutterMultiExitSeparateGreedy();
 	double declutterUsingMultiExitTruncatedTree(int num_objs);
-	//std::map<int, graspDist> getCandidateObjectsFromExit(Polygon2_list obs_list, Polygon2_list obs_outer_list, std::pair<double, double> exit_start, PRM& planner);
+	std::map<int, graspDist> getCandidateObjectsFromExit(Polygon2_list obs_list, Polygon2_list obs_outer_list, std::pair<double, double> exit_start, planner_t& planner);
 
 private:
 	// Refresh edge list

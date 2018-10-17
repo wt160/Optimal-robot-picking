@@ -356,14 +356,14 @@ RRTstar::Planner<State, Trajectory, System>
 		}
 	}
 
-	if ((temp_add_vertices.find(&vertexStartIn) == temp_add_vertices.end())) {
-		if (temp_rewired_vertices.find(&vertexEndIn) == temp_rewired_vertices.end()) {
-			temp_rewired_vertices.insert(&vertexEndIn);
-			temp_rewired_old_parent[&vertexEndIn] = vertexEndIn.parent;
-			temp_rewired_old_cost[&vertexEndIn] = vertexEndIn.costFromRoot;
-			temp_rewired_old_costfromparent[&vertexEndIn] = vertexEndIn.costFromParent;
-		}
-	}
+	//if ((temp_add_vertices.find(&vertexStartIn) == temp_add_vertices.end())) {
+	//	if (temp_rewired_vertices.find(&vertexEndIn) == temp_rewired_vertices.end()) {
+	//		temp_rewired_vertices.insert(&vertexEndIn);
+	//		temp_rewired_old_parent[&vertexEndIn] = vertexEndIn.parent;
+	//		temp_rewired_old_cost[&vertexEndIn] = vertexEndIn.costFromRoot;
+	//		temp_rewired_old_costfromparent[&vertexEndIn] = vertexEndIn.costFromParent;
+	//	}
+	//}
 	// Update the costs
 	vertexEndIn.costFromParent = trajectoryIn.evaluateCost();
 	vertexEndIn.costFromRoot = vertexStartIn.costFromRoot + vertexEndIn.costFromParent;

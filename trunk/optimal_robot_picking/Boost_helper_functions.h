@@ -18,11 +18,11 @@ using namespace std;
 using namespace VisiLibity;
 
 
-#define OBJ_WIDTH 30
-#define OBJ_LENGTH 145
+#define OBJ_WIDTH 32
+#define OBJ_LENGTH 150
 //#define ALL_FLAT 
 #define NOT_AXIS_ALIGNED
-#define DIFFERENT_SIZE
+//#define DIFFERENT_SIZE
 #define MIXED_CLUSTER
 //double getTriangleArea(const Point_2& p1, Point_2 p2, Point_2 p3);
 // Populate the polygon as an approximate disc with segments nuber of sides

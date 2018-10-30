@@ -2094,7 +2094,7 @@ void MainWindow::createRandomProblem() {
 	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 	m_PolyAGIList.push_back(m_pBoundingPolyAGI2);
 	// m_scene.addItem(m_pBoundingPolyAGI2);
-	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/diff_size_mixed/";
+	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/gazebo_env/";
 
 	std::ofstream ofs(output_filename + std::to_string((long long)numberOfPolygons)  + "_"+ std::to_string((long long)current_case) + ".txt", std::ofstream::out);
 	ofs << 30 << std::endl;
@@ -2745,10 +2745,46 @@ void MainWindow::runTest() {
 	double multiexit_greedy = 0;
 	double multiexit_tree = 0;
 	double multiexit_separate_greedy = 0;
-		for(int k = 0; k < 10; k++) {
-			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/1_cluster/5/";
+	int number_different_objects = 1;
+	std::vector<int> number_objects_list; 
+	//number_objects_list.push_back(5);
+	//number_objects_list.push_back(10);
+	//number_objects_list.push_back(15);
+	//number_objects_list.push_back(20);
+	//number_objects_list.push_back(25);
+	number_objects_list.push_back(100);
+	std::ofstream myfile;
+	myfile.open("C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/diff_size_mixed/result.txt");
+	for (int p = 0; p < number_different_objects; p++) {
+		 greedy_total_time = 0;
+		 tree_search_total_time = 0;
+		 greedy_particle_total_time = 0;
+		 greedy_stepahead_total_time = 0;
+		 tree_mcts_total_time = 0;
+		 multiexit_greedy_total_time = 0;
+		 multiexit_tree_total_time = 0;
+		 multiexit_separate_greedy_total_time = 0;
+		 greedy_total_dist = 0;
+		 tree_search_total_dist = 0;
+		 greedy_particle_total_dist = 0;
+		 greedy_stepahead_total_dist = 0;
+		 tree_mcts_total_dist = 0;
+		 multiexit_greedy_total_dist = 0;
+		 multiexit_tree_total_dist = 0;
+		 multiexit_separate_greedy_total_dist = 0;
+		 exhaus_dist = 0;
+		 greedy_dist = 0;
+		 multi_greedy_dist = 0;
+		 particle_greedy_dist = 0;
+		 mcts_dist = 0;
+		 multiexit_greedy = 0;
+		 multiexit_tree = 0;
+		 multiexit_separate_greedy = 0;
 
-			output_filename += ("5_" + std::to_string((long long)k) + ".txt");
+		for (int k = 0; k < 10; k++) {
+			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/diff_size_mixed/";
+			
+			output_filename += (std::to_string((long long)number_objects_list[p])+"/" + std::to_string((long long)number_objects_list[p]) + "_" +std::to_string((long long)k) + ".txt");
 			readProblemFromFile(output_filename);
 			clock_t t1, t2;
 			float diff = 0;
@@ -2776,7 +2812,7 @@ void MainWindow::runTest() {
 			std::cout << "mcts time:" << seconds << std::endl;
 			tree_mcts_total_time += seconds;
 			t1 = clock();
-			multi_greedy_dist = m_roadmap.declutterUsingMultipleGreedy(m_numRobots);
+			//multi_greedy_dist = m_roadmap.declutterUsingMultipleGreedy(m_numRobots);
 			t2 = clock();
 			diff = (float)t2 - (float)t1;
 			seconds = diff / CLOCKS_PER_SEC;
@@ -2794,7 +2830,7 @@ void MainWindow::runTest() {
 			t2 = clock();
 			diff = (float)t2 - (float)t1;
 			seconds = diff / CLOCKS_PER_SEC;
-			//std::cout << "multi exit greedy time:" << seconds << std::endl;
+			std::cout << "multi exit greedy time:" << seconds << std::endl;
 			multiexit_greedy_total_time += seconds;
 
 			t1 = clock();
@@ -2826,12 +2862,17 @@ void MainWindow::runTest() {
 			multiexit_tree_total_dist += multiexit_tree;
 			multiexit_greedy_total_dist += multiexit_greedy;
 			multiexit_separate_greedy_total_dist += multiexit_separate_greedy;
-			std::cout << "average up till now TIME: exhaus_time:" << tree_search_total_time /(k+1) << "   , greedy_time:" << greedy_total_time/(k+1)  << " ,multi greedy time:" << greedy_stepahead_total_time / (k+1) << "    ,particle greedy time:" << greedy_particle_total_time / (k+1) << "  ,mcts time:" << tree_mcts_total_time/(k+1) << std::endl;
-			std::cout << "average up till now Time: multiexit_greedy:" << multiexit_greedy_total_time / (k + 1) << ",  multiexit_tree:" << multiexit_tree_total_time / (k + 1) << ",  multiexit_separate_greedy:" << multiexit_separate_greedy_total_time / (k + 1)<<std::endl;
-			std::cout << "average up till now DIST: exhaus_dist:" <<2* tree_search_total_dist / (k+1)  << "   , greedy_dist:" << 2*greedy_total_dist/ (k+1)  << " ,multi greedy dist:" <<2* greedy_stepahead_total_dist / (k+1)  << "    ,particle greedy dist:" << 2*greedy_particle_total_dist/(k+1) << "  ,mcts dist:" <<2* tree_mcts_total_dist / (k+1)  << std::endl;
+			std::cout << "average up till now TIME: exhaus_time:" << tree_search_total_time / (k + 1) << "   , greedy_time:" << greedy_total_time / (k + 1) << " ,multi greedy time:" << greedy_stepahead_total_time / (k + 1) << "    ,particle greedy time:" << greedy_particle_total_time / (k + 1) << "  ,mcts time:" << tree_mcts_total_time / (k + 1) << std::endl;
+			std::cout << "average up till now Time: multiexit_greedy:" << multiexit_greedy_total_time / (k + 1) << ",  multiexit_tree:" << multiexit_tree_total_time / (k + 1) << ",  multiexit_separate_greedy:" << multiexit_separate_greedy_total_time / (k + 1) << std::endl;
+			std::cout << "average up till now DIST: exhaus_dist:" << 2 * tree_search_total_dist / (k + 1) << "   , greedy_dist:" << 2 * greedy_total_dist / (k + 1) << " ,multi greedy dist:" << 2 * greedy_stepahead_total_dist / (k + 1) << "    ,particle greedy dist:" << 2 * greedy_particle_total_dist / (k + 1) << "  ,mcts dist:" << 2 * tree_mcts_total_dist / (k + 1) << std::endl;
 			std::cout << "average up till now Dist: multiexit_greedy:" << multiexit_greedy_total_dist / (k + 1) << ",  multiexit_tree:" << multiexit_tree_total_dist / (k + 1) << ",  multiexit_separate_greedy:" << multiexit_separate_greedy_total_dist / (k + 1) << std::endl;
-
+			
 		}
+		myfile << "average up till now TIME: exhaus_time:" << tree_search_total_time / (9 + 1) << "   , greedy_time:" << greedy_total_time / (9 + 1) << " ,multi greedy time:" << greedy_stepahead_total_time / (9 + 1) << "    ,particle greedy time:" << greedy_particle_total_time / (9 + 1) << "  ,mcts time:" << tree_mcts_total_time / (9 + 1) << "\n";
+		myfile << "average up till now Time: multiexit_greedy:" << multiexit_greedy_total_time / (9 + 1) << ",  multiexit_tree:" << multiexit_tree_total_time / (9 + 1) << ",  multiexit_separate_greedy:" << multiexit_separate_greedy_total_time / (9 + 1) << "\n";
+		myfile << "average up till now DIST: exhaus_dist:" << 2 * tree_search_total_dist / (9 + 1) << "   , greedy_dist:" << 2 * greedy_total_dist / (9 + 1) << " ,multi greedy dist:" << 2 * greedy_stepahead_total_dist / (9 + 1) << "    ,particle greedy dist:" << 2 * greedy_particle_total_dist / (9 + 1) << "  ,mcts dist:" << 2 * tree_mcts_total_dist / (9 + 1) << "\n";
+		myfile << "average up till now Dist: multiexit_greedy:" << multiexit_greedy_total_dist / (9 + 1) << ",  multiexit_tree:" << multiexit_tree_total_dist / (9 + 1) << ",  multiexit_separate_greedy:" << multiexit_separate_greedy_total_dist / (9 + 1) << "\n";
+	}
 		std::cout << "AVERAGE TIME: exhaus_time:" << tree_search_total_time / 10 << "   , greedy_dist:" << greedy_total_time / 10 << " ,multi greedy dist:" << greedy_stepahead_total_time / 10 << "    ,particle greedy dist:" << greedy_particle_total_time / 10 << "  ,mcts dist:" << tree_mcts_total_time / 10 << std::endl;
 
 		std::cout << "AVERAGE DIST: exhaus_dist:" << tree_search_total_dist/10 << "   , greedy_dist:" << greedy_total_dist /10<< " ,multi greedy dist:" << greedy_stepahead_total_dist/10 << "    ,particle greedy dist:" << greedy_particle_total_dist/10<<"  ,mcts dist:"<< tree_mcts_total_dist /10<< std::endl;

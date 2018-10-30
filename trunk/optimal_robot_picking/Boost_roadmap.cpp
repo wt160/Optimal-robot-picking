@@ -3043,8 +3043,8 @@ double Roadmap::declutterMultiExitGreedy() {
 	std::vector<std::pair<double, double>> exit_list;
 	exit_list.push_back(std::make_pair(EXIT_0_X, EXIT_0_Y));
 	exit_list.push_back(std::make_pair(EXIT_1_X, EXIT_1_Y));
-	//exit_list.push_back(std::make_pair(EXIT_2_X, EXIT_2_Y));
-	//exit_list.push_back(std::make_pair(EXIT_3_X, EXIT_3_Y));
+	exit_list.push_back(std::make_pair(EXIT_2_X, EXIT_2_Y));
+	exit_list.push_back(std::make_pair(EXIT_3_X, EXIT_3_Y));
 
 	Polygon2_list obs_list = m_objectPolyList;
 	Polygon2_list obs_outer_list = m_objectOuterPolyList;
@@ -3094,8 +3094,8 @@ double Roadmap::declutterMultiExitGreedy() {
 	// Add the system to the planner
 	rrts_list.push_back(rrts_exit_0_greedy);
 	rrts_list.push_back(rrts_exit_1_greedy);
-	//rrts_list.push_back(rrts_exit_2_greedy);
-	//rrts_list.push_back(rrts_exit_3_greedy);
+	rrts_list.push_back(rrts_exit_2_greedy);
+	rrts_list.push_back(rrts_exit_3_greedy);
 
 	for (int rrts_index = 0; rrts_index < rrts_list.size(); rrts_index++) {
 		rrts_list[rrts_index].setSystem(robot2d_multiexit_greedy);
@@ -3334,6 +3334,7 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 	int closest_obj_index = 0;
 	int local_obj_index = 0;
 	int closest_local_index = 0;
+	int delete_obs_list_index = 0;
 	Point_2 closest_grasp;
 	double nearest_dist = 10000000;
 	double total_dist = 0;
@@ -3360,11 +3361,37 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 		}
 
 		std::vector<Point_2> grasp_poses = graspCubeToBaseMap[obj_index];
-		for (int j = 0; j < grasp_poses.size(); j++) {
+		if (grasp_poses.size() > 0) {
+			for (int j = 0; j < grasp_poses.size(); j++) {
+				double exit_shortest_dist = 10000000;
+				int exit_index = 0;
+				for (int e = 0; e < exit_list.size(); e++) {
+					double to_exit_dist = bg::distance(grasp_poses[j], Point_2(exit_list[e].first, exit_list[e].second));
+					if (to_exit_dist < exit_shortest_dist) {
+						exit_shortest_dist = to_exit_dist;
+						exit_index = e;
+					}
+				}
+				exit_outer_vector[exit_index].push_back(*i);
+				exit_vector[exit_index].push_back(*obs_inner);
+				// if (grasp_poses[j].get<1>() > 2500) {
+				// 	exit_0_obs_outer_list.push_back(*i);
+				// 	exit_0_obs_list.push_back(*obs_inner);
+				// }
+				// else{
+				// 	exit_1_obs_outer_list.push_back(*i);
+				// 	exit_1_obs_list.push_back(*obs_inner);
+				// }
+				break;
+			}
+		}
+		else {
+			Point_2 center;
+			bg::centroid(*i ,center);
 			double exit_shortest_dist = 10000000;
 			int exit_index = 0;
 			for (int e = 0; e < exit_list.size(); e++) {
-				double to_exit_dist = bg::distance(grasp_poses[j], Point_2(exit_list[e].first, exit_list[e].second));
+				double to_exit_dist = bg::distance(center, Point_2(exit_list[e].first, exit_list[e].second));
 				if (to_exit_dist < exit_shortest_dist) {
 					exit_shortest_dist = to_exit_dist;
 					exit_index = e;
@@ -3372,155 +3399,201 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 			}
 			exit_outer_vector[exit_index].push_back(*i);
 			exit_vector[exit_index].push_back(*obs_inner);
-			// if (grasp_poses[j].get<1>() > 2500) {
-			// 	exit_0_obs_outer_list.push_back(*i);
-			// 	exit_0_obs_list.push_back(*obs_inner);
-			// }
-			// else{
-			// 	exit_1_obs_outer_list.push_back(*i);
-			// 	exit_1_obs_list.push_back(*obs_inner);
-			// }
-			break;
 		}
 	}
-
+	   
 
 	// start from exit 0
 	std::vector<int> covered_exit;
 	covered_exit.push_back(0);
 	if (current_exit_index == 0) {
 		while (total_left_num > 0) {
-			while (exit_outer_vector[current_exit_index].size() > 0) {
-				closest_obj_index = 0;
-				local_obj_index = 0;
-				obj_index = 0;
-				nearest_dist = 10000000;
-				//std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
-				std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(exit_vector[current_exit_index], exit_outer_vector[current_exit_index]);
-				//Environment  *env;
-				//Visibility_Graph *v_graph;
-				//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
-				for (auto i = exit_outer_vector[current_exit_index].begin(); i != exit_outer_vector[current_exit_index].end(); i++) {
+			if (exit_outer_vector[current_exit_index].size() > 0) {
+				while (exit_outer_vector[current_exit_index].size() > 0) {
+					closest_obj_index = 0;
+					local_obj_index = 0;
 					obj_index = 0;
+					nearest_dist = 10000000;
+					//std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
+					//std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(exit_vector[current_exit_index], exit_outer_vector[current_exit_index]);
+					graspCubeToBaseMap.clear();
+					std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+					int obs_global_index = 0;
+					//Environment  *env;
+					//Visibility_Graph *v_graph;
+					//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
+					for (auto i = exit_outer_vector[current_exit_index].begin(); i != exit_outer_vector[current_exit_index].end(); i++) {
+						obj_index = 0;
 
-					for (auto ob = m_objectOuterPolyList.begin(); ob != m_objectOuterPolyList.end(); ob++) {
-						if (bg::equals(*i, *ob)) {
-							break;
+						for (auto ob = m_objectOuterPolyList.begin(); ob != m_objectOuterPolyList.end(); ob++) {
+							if (bg::equals(*i, *ob)) {
+								break;
+							}
+							obj_index++;
 						}
-						obj_index++;
-					}
-					std::vector<Point_2> grasp_poses = graspCubeToBaseMap[obj_index];
-					for (int j = 0; j < grasp_poses.size(); j++) {
-						std::list<Point_2 > path;
-						//				double temp_dist = visi_computeShortestPath(START_X, START_Y, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, env, v_graph);
-						double phase_1_dist = new_computeShortestPath(exit_list[current_exit_index].first, exit_list[current_exit_index].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[current_exit_index]);
-						//std::cout << "temp_dist:" << temp_dist << " pose:"<< grasp_poses[j].get<0>()<<","<<grasp_poses[j].get<1>()<<std::endl;
-						double phase_2_dist = 0;
+						obs_global_index = 0;
 
-						if (exit_outer_vector[current_exit_index].size() > 1 ) {
-							phase_2_dist = phase_1_dist;
+						for (auto ob = obs_outer_list.begin(); ob != obs_outer_list.end(); ob++) {
+							if (bg::equals(*i, *ob)) {
+								break;
+							}
+							obs_global_index++;
+						}
+						std::vector<Point_2> grasp_poses = graspCubeToBaseMap[obj_index];
+						for (int j = 0; j < grasp_poses.size(); j++) {
+							std::list<Point_2 > path;
+							//				double temp_dist = visi_computeShortestPath(START_X, START_Y, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, env, v_graph);
+							double phase_1_dist = new_computeShortestPath(exit_list[current_exit_index].first, exit_list[current_exit_index].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[current_exit_index]);
+							//std::cout << "temp_dist:" << temp_dist << " pose:"<< grasp_poses[j].get<0>()<<","<<grasp_poses[j].get<1>()<<std::endl;
+							double phase_2_dist = 0;
 
-							if (phase_1_dist + phase_2_dist < nearest_dist) {
+							if (exit_outer_vector[current_exit_index].size() > 1) {
+								phase_2_dist = phase_1_dist;
+
+								if (phase_1_dist + phase_2_dist < nearest_dist) {
+									nearest_dist = phase_1_dist + phase_2_dist;
+									closest_obj_index = obj_index;
+									closest_grasp = grasp_poses[j];
+									nearest_obj_iterator = i;
+									closest_local_index = local_obj_index;
+									next_exit_index = current_exit_index;
+									delete_obs_list_index = obs_global_index;
+								}
+							}
+							else {
+								double min_to_exit_dist = 10000000;
+								for (int e = 0; e < exit_outer_vector.size(); e++) {
+									bool is_new = true;
+									for (int pp = 0; pp < covered_exit.size(); pp++) {
+										if (e == covered_exit[pp]) {
+											is_new = false;
+											break;
+										}
+									}
+									if (!is_new) {
+										continue;
+									}
+									if (exit_outer_vector[e].size() == 0) {
+										continue;
+									}
+									if (e != current_exit_index) {
+										phase_2_dist = new_computeShortestPath(exit_list[e].first, exit_list[e].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[e]);
+										if (phase_2_dist < min_to_exit_dist) {
+											min_to_exit_dist = phase_2_dist;
+											next_exit_index = e;
+										}
+									}
+								}
 								nearest_dist = phase_1_dist + phase_2_dist;
 								closest_obj_index = obj_index;
 								closest_grasp = grasp_poses[j];
 								nearest_obj_iterator = i;
 								closest_local_index = local_obj_index;
-								next_exit_index = current_exit_index;
+								delete_obs_list_index = obs_global_index;
+
 							}
+							//for (int k = 0; k < TOTAL_EXIT_NUM; k++) {
+							//	phase_2_dist = new_computeShortestPath(exit_list[k].first, exit_list[k].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[k]);
+
+
+							//}
 						}
-						else {
-							double min_to_exit_dist = 10000000;
-							for (int e = 0; e < exit_outer_vector.size(); e++) {
-								bool is_new = true;
-								for (int pp = 0; pp < covered_exit.size(); pp++) {
-									if (e == covered_exit[pp]) {
-										is_new = false;
-										break;
-									}
-								}
-								if (!is_new) {
-									continue;
-								}
-								if (e != current_exit_index) {
-									phase_2_dist = new_computeShortestPath(exit_list[e].first, exit_list[e].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[e]);
-									if (phase_2_dist < min_to_exit_dist) {
-										min_to_exit_dist = phase_2_dist;
-										next_exit_index = e;
-									}
-								}
-							}
-							nearest_dist = phase_1_dist + phase_2_dist;
-							closest_obj_index = obj_index;
-							closest_grasp = grasp_poses[j];
-							nearest_obj_iterator = i;
-							closest_local_index = local_obj_index;
+						//obj_index++;
+						local_obj_index++;
+					}
+					std::cout << "pick " << closest_obj_index << " object, grasp pose:" << closest_grasp.get<0>() << "," << closest_grasp.get<1>() << "shortest dist:" << nearest_dist << " next exit:" << next_exit_index << std::endl;
+					total_dist += nearest_dist;
+					picking_sequence.push_back(closest_obj_index);
+					exit_outer_vector[current_exit_index].erase(nearest_obj_iterator);
+					//obs_outer_list.erase(nearest_obj_iterator);
+					obstaclePolyList_iterator = exit_vector[current_exit_index].begin();
+					//auto delete_obs = robot2d_multiexit_greedy.obstacles.begin();
+					auto delete_obs = backup_obstacles.begin();
+					auto global_obj_delete = obs_list.begin();
+					auto global_outer_obj_delete = obs_outer_list.begin();
+					int j = 0;
+					while (j++ < closest_local_index) {
+						obstaclePolyList_iterator++;
+						
+					}
+					j = 0;
+					while (j++ < closest_obj_index) {
+						delete_obs++;
+						
+					}
+					j = 0;
+					while (j++ < delete_obs_list_index) {
+						global_obj_delete++;
+						global_outer_obj_delete++;
+					}
+					obs_list.erase(global_obj_delete);
+					obs_outer_list.erase(global_outer_obj_delete);
+					Polygon_2* erase_region = *delete_obs;
+					auto final_delete_obs_0 = robot2d_multiexit_greedy.obstacles.begin();
+					for (auto p = robot2d_multiexit_greedy.obstacles.begin(); p != robot2d_multiexit_greedy.obstacles.end(); p++) {
+						if (bg::equals(**p, *erase_region)) {
+							break;
 						}
-						//for (int k = 0; k < TOTAL_EXIT_NUM; k++) {
-						//	phase_2_dist = new_computeShortestPath(exit_list[k].first, exit_list[k].second, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_list[k]);
-
-
-						//}
+						final_delete_obs_0++;
 					}
-					//obj_index++;
-					local_obj_index++;
-				}
-				std::cout << "pick " << closest_obj_index << " object, grasp pose:" << closest_grasp.get<0>() << "," << closest_grasp.get<1>() << "shortest dist:" << nearest_dist << " next exit:" << next_exit_index << std::endl;
-				total_dist += nearest_dist;
-				picking_sequence.push_back(closest_obj_index);
-				exit_outer_vector[current_exit_index].erase(nearest_obj_iterator);
-				//obs_outer_list.erase(nearest_obj_iterator);
-				obstaclePolyList_iterator = exit_vector[current_exit_index].begin();
-				//auto delete_obs = robot2d_multiexit_greedy.obstacles.begin();
-				auto delete_obs = backup_obstacles.begin();
-				int j = 0;
-				while (j++ < closest_local_index) {
-					obstaclePolyList_iterator++;
-				}
-				j = 0;
-				while (j++ < closest_obj_index) {
-					delete_obs++;
+					robot2d_multiexit_greedy.obstacles.erase(final_delete_obs_0);
 
-				}
-				Polygon_2* erase_region = *delete_obs;
-				auto final_delete_obs_0 = robot2d_multiexit_greedy.obstacles.begin();
-				for (auto p = robot2d_multiexit_greedy.obstacles.begin(); p != robot2d_multiexit_greedy.obstacles.end(); p++) {
-					if (bg::equals(**p, *erase_region)) {
-						break;
-					}
-					final_delete_obs_0++;
-				}
-				robot2d_multiexit_greedy.obstacles.erase(final_delete_obs_0);
-
-				//robot2d_multiexit_greedy.obstacles.erase(delete_obs);
-				robot2d_multiexit_greedy.updateHashMap(erase_region);
+					//robot2d_multiexit_greedy.obstacles.erase(delete_obs);
+					robot2d_multiexit_greedy.updateHashMap(erase_region);
 #ifdef BIG_ENV
-				for (int rrts_index = 0; rrts_index < rrts_list.size(); rrts_index++) {
-					for (int i = 0; i < 10; i++) {
-						if (i == 9) {
-							//std::cout << "full temp_iteration:" << std::endl;
-							rrts_list[rrts_index].full_temp_iteration(erase_region);
+					for (int rrts_index = 0; rrts_index < rrts_list.size(); rrts_index++) {
+						for (int i = 0; i < 10; i++) {
+							if (i == 9) {
+								//std::cout << "full temp_iteration:" << std::endl;
+								rrts_list[rrts_index].full_temp_iteration(erase_region);
+							}
+							else {
+								rrts_list[rrts_index].temp_iteration(erase_region);
+							}
 						}
-						else {
-							rrts_list[rrts_index].temp_iteration(erase_region);
-						}
-					}
 
-				}
+					}
 #endif
 #ifdef SMALL_ENV
-				for (int rrts_index = 0; rrts_index < rrts_list.size(); rrts_index++) {
-					for (int i = 0; i < 5; i++)
-						rrts_list[rrts_index].temp_iteration(*erase_region);
-				}
+					for (int rrts_index = 0; rrts_index < rrts_list.size(); rrts_index++) {
+						for (int i = 0; i < 5; i++)
+							rrts_list[rrts_index].temp_iteration(*erase_region);
+					}
 #endif
-				exit_vector[current_exit_index].erase(obstaclePolyList_iterator);
-				total_left_num--;
+					exit_vector[current_exit_index].erase(obstaclePolyList_iterator);
+					total_left_num--;
 
+				}
+
+				covered_exit.push_back(current_exit_index);
+				current_exit_index = next_exit_index;
 			}
-			covered_exit.push_back(current_exit_index);
-			current_exit_index = next_exit_index;
+			else {
 
+				// when current exit's region has no objects. Actually, this only happens at the first exit( exit 0 )
+				
+				for (int e = 0; e < exit_outer_vector.size(); e++) {
+					bool is_new = true;
+					for (int pp = 0; pp < covered_exit.size(); pp++) {
+						if (e == covered_exit[pp]) {
+							is_new = false;
+							break;
+						}
+					}
+					if (!is_new) {
+						continue;
+					}
+					if (exit_outer_vector[e].size() == 0) {
+						continue;
+					}
+					if (e != current_exit_index) {
+						double phase_dist = bg::distance(Point_2(exit_list[current_exit_index].first, exit_list[current_exit_index].second), Point_2(exit_list[e].first, exit_list[e].second));
+						current_exit_index = e;
+						total_dist += phase_dist;
+						break;
+					}
+				}
+			}
 		}
 
 	}
@@ -3992,7 +4065,7 @@ double Roadmap::declutterUsingGreedy(){
 		std::cout << "pick " << closest_obj_index << " object, grasp pose:" << closest_grasp.get<0>() << "," << closest_grasp.get<1>() << "shortest dist:" << nearest_dist << std::endl;
 		total_dist += nearest_dist;
 		picking_sequence.push_back(closest_obj_index);
-		obs_outer_list.erase(nearest_obj_iterator);
+ 		obs_outer_list.erase(nearest_obj_iterator);
 		obstaclePolyList_iterator = obs_list.begin();
 		auto delete_obs = robot2d_1.obstacles.begin();
 		int j = 0;

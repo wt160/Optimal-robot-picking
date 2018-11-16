@@ -29,7 +29,7 @@ namespace RRTstar {
     template<class State, class Trajectory, class System>
     class Vertex {
             
-        Vertex *parent;
+
         State *state;
         std::set<Vertex*> children;
         double costFromParent;
@@ -38,7 +38,7 @@ namespace RRTstar {
 		int index_;
 
     public:
-    
+		Vertex *parent;
         /*!
          * \brief Vertex constructor
          *
@@ -247,7 +247,7 @@ namespace RRTstar {
 		int temp_iteration(Polygon_2*);
 		int full_temp_iteration(Polygon_2*);
 
-		int connect(State target, double& dist);
+		int connect(State target, double& dist, std::vector<std::pair<double, double>>&);
 
 		int temp_restore();
         /*!

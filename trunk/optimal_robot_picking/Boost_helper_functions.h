@@ -17,6 +17,8 @@
 using namespace std;
 using namespace VisiLibity;
 
+//#define USE_TETRIS
+#define SPECIAL_STRUCTURE
 
 #define OBJ_WIDTH 32
 #define OBJ_LENGTH 150
@@ -58,6 +60,7 @@ std::vector<std::vector<int>> generateComb(int K);
 
 void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw);
 void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw, double width, double length);
+void generateTetrisBlock(Polygon_2& result, double start_x, double start_y, double yaw, int type);
 
 void getBoundingPoly(Polygon_2& target, Point_2& upper_left, Point_2& upper_right, Point_2& down_left, Point_2& down_right, double dist);
 void convertPolygon2Region(Polygon_2 poly, double& center_x, double& center_y, double& size_x, double& size_y);

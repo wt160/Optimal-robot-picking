@@ -305,10 +305,17 @@ std::set<std::pair<int, int>> System::getIndexForHash(Polygon_2 ob, double unit_
 	down_right_index.first = floor(down_right_x / unit_size);
 	down_right_index.second = floor(down_right_y / unit_size);
 
-	result.insert(upper_left_index);
-	result.insert(upper_right_index);
-	result.insert(down_left_index);
-	result.insert(down_right_index);
+	for (int i = upper_left_index.first; i <= upper_right_index.first; i++) {
+		for (int j = upper_left_index.second; j <= down_left_index.second; j++) {
+			result.insert(std::make_pair<int, int>(i, j));
+		}
+	}
+
+
+	//result.insert(upper_left_index);
+	//result.insert(upper_right_index);
+	//result.insert(down_left_index);
+	//result.insert(down_right_index);
 	return result;
 
 }

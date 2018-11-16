@@ -174,6 +174,131 @@ void getBoundingPoly(Polygon_2& target, Point_2& upper_left, Point_2& upper_righ
 	down_right.set<1>(down + dist);
 }
 
+// type: 0: *****
+//
+//       1:   *
+//           ***
+//
+//       2:  ***
+//           *
+//
+//       3:  *
+//           **
+//            *
+void generateTetrisBlock(Polygon_2& result, double start_x, double start_y, double yaw, int type) {
+	result.outer().clear();
+	Point_2 upper_right, upper_left, down_right, down_left;
+	double x, y;
+	double length = OBJ_LENGTH / 2.0;  double width = OBJ_WIDTH / 2.0;
+	x = length; y = width;
+	if (type == 0) {
+		Point_2 pt_0, pt_1, pt_2, pt_3;
+		x = 0; y = 0;
+		pt_0.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_0.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 4 * OBJ_WIDTH;
+		y = 0;
+		pt_1.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_1.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 4 * OBJ_WIDTH;
+		y = OBJ_WIDTH;
+		pt_2.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_2.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 0;
+		y = OBJ_WIDTH;
+		pt_3.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_3.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		bg::append(result.outer(), pt_0);
+		bg::append(result.outer(), pt_1);
+		bg::append(result.outer(), pt_2);
+		bg::append(result.outer(), pt_3);
+
+	}
+	else if (type == 1) {
+		Point_2 pt_0, pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7;
+		x = 0; y = 0;
+		pt_0.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_0.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = OBJ_WIDTH;
+		y = 0;
+		pt_1.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_1.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = OBJ_WIDTH;
+		y = -OBJ_WIDTH;
+		pt_2.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_2.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 2*OBJ_WIDTH;
+		y = -OBJ_WIDTH;
+		pt_3.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_3.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 2 * OBJ_WIDTH;
+		y = 0;
+		pt_4.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_4.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 3 * OBJ_WIDTH;
+		y = 0;
+		pt_5.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_5.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 3 * OBJ_WIDTH;
+		y = OBJ_WIDTH;
+		pt_6.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_6.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 0;
+		y = OBJ_WIDTH;
+		pt_7.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_7.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		bg::append(result.outer(), pt_0);
+		bg::append(result.outer(), pt_1);
+		bg::append(result.outer(), pt_2);
+		bg::append(result.outer(), pt_3);
+		bg::append(result.outer(), pt_4);
+		bg::append(result.outer(), pt_5);
+		bg::append(result.outer(), pt_6);
+		bg::append(result.outer(), pt_7);
+	}
+	else if (type == 2) {
+		Point_2 pt_0, pt_1, pt_2, pt_3, pt_4, pt_5;
+		x = 0; y = 0;
+		pt_0.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_0.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 2*OBJ_WIDTH;
+		y = 0;
+		pt_1.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_1.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 2*OBJ_WIDTH;
+		y = OBJ_WIDTH;
+		pt_2.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_2.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = OBJ_WIDTH;
+		y = OBJ_WIDTH;
+		pt_3.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_3.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = OBJ_WIDTH;
+		y = 3*OBJ_WIDTH;
+		pt_4.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_4.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		x = 0;
+		y = 3*OBJ_WIDTH;
+		pt_5.set<0>(start_x + cos(yaw)*x - sin(yaw)*y);
+		pt_5.set<1>(start_y - (sin(yaw)*x + cos(yaw)*y));
+		
+		
+		bg::append(result.outer(), pt_0);
+		bg::append(result.outer(), pt_1);
+		bg::append(result.outer(), pt_2);
+		bg::append(result.outer(), pt_3);
+		bg::append(result.outer(), pt_4);
+		bg::append(result.outer(), pt_5);
+	}
+
+
+
+
+	
+
+	bg::correct(result);
+}
+
 void generatePoly(Polygon_2& result, double center_x, double center_y, double yaw) {
 	result.outer().clear();
 	Point_2 upper_right, upper_left, down_right, down_left;

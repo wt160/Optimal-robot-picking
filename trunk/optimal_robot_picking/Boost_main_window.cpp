@@ -1003,10 +1003,10 @@ void MainWindow::drawBasicEnvironment(){
 
 // get the total distance of removing the objects using greedy algorithm
 void MainWindow::overlayLattice(){
-	//m_roadmap.declutterUsingGreedy();
+	m_roadmap.declutterUsingGreedy();
 	int numberOfPolygons = m_pLineEdit->text().toInt();
-	//m_roadmap.declutterUsingTruncatedTree(numberOfPolygons);
-	m_roadmap.declutterMultiExitSeparateGreedy();
+	m_roadmap.declutterUsingTruncatedTree(numberOfPolygons);
+	//m_roadmap.declutterMultiExitSeparateGreedy();
 	//m_roadmap.declutterMultiExitGreedy();
 	//m_roadmap.declutterUsingMultipleGreedy(numberOfPolygons);
 	//m_roadmap.declutterUsingParticleGreedy(numberOfPolygons);
@@ -1346,6 +1346,505 @@ bool MainWindow::isTwoPolyTooClose(Polygon_2 a, Polygon_2 b) {
 		return false;
 	}
 
+}
+
+Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::vector<Polygon_2> all_created_polys) {
+	double yaw;
+	double length = 145;
+	double obj_between_dist = 15;
+	//srand(time(NULL));
+	double width = 30;
+	Polygon_2 new_poly;
+	std::uniform_int_distribution<int> distribution(0, 10000);
+	std::random_device rd;
+	std::mt19937 engine(rd());
+	int type = 0;
+#ifdef ALL_FLAT
+	yaw = 0;
+#else
+	if (distribution(engine) / 10000. < 0.5) {
+		yaw = 1.57;
+	}
+	else {
+		yaw = 0;
+	}
+#endif
+	double type_double = distribution(engine) / 10000.;
+	if (type_double < 0.3333) {
+		type = 0;
+	}
+	else if (type_double < 0.6667 && type_double > 0.3333) {
+		type = 1;
+	}
+	else {
+		type = 2;
+	}
+#ifdef NOT_AXIS_ALIGNED
+	yaw = distribution(engine) / 10000. * 3.14;
+#endif
+	Segment_2 border_1, border_2, border_3, border_4;
+#ifdef BIG_ENV
+	border_1.first = Point_2(0, 0);
+	border_1.second = Point_2(5000, 0);
+	border_2.first = Point_2(5000, 0);
+	border_2.second = Point_2(5000, 5000);
+	border_3.first = Point_2(5000, 5000);
+	border_3.second = Point_2(0, 5000);
+	border_4.first = Point_2(0, 5000);
+	border_4.second = Point_2(0, 0);
+
+#endif
+
+#ifdef SMALL_ENV
+	border_1.first = Point_2(0, 0);
+	border_1.second = Point_2(1000, 0);
+	border_2.first = Point_2(1000, 0);
+	border_2.second = Point_2(1000, 1000);
+	border_3.first = Point_2(1000, 1000);
+	border_3.second = Point_2(0, 1000);
+	border_4.first = Point_2(0, 1000);
+	border_4.second = Point_2(0, 0);
+#endif
+	std::vector<Polygon_2> final_outer;
+	if (exist_polys.size() == 1) {
+
+		Point_2 upper_left, upper_right, down_left, down_right;
+		Polygon_2 outer_poly;
+		// upper_left = exist_polys[0].outer()[1];
+		// upper_right = exist_polys[0].outer()[2];
+		// down_right = exist_polys[0].outer()[3];
+		// down_left = exist_polys[0].outer()[0];
+		getBoundingPoly(exist_polys[0], upper_left, upper_right, down_left, down_right, obj_between_dist);
+		// if (yaw > 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - width / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - length / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + width / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - length / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + width / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + length / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - width / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + length / 2);
+		// }
+		// else if (yaw == 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - length / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - width / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + length / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - width / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + length / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + width / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - length / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + width / 2);
+		// }
+		bg::append(outer_poly.outer(), upper_left);
+		bg::append(outer_poly.outer(), upper_right);
+		bg::append(outer_poly.outer(), down_right);
+		bg::append(outer_poly.outer(), down_left);
+		bg::correct(outer_poly);
+
+		bool is_valid = false;
+		while (!is_valid) {
+			new_poly.outer().clear();
+			is_valid = true;
+			double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
+			Point_2 origin;
+			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
+			origin.set<1>((upper_left.get<1>() + down_left.get<1>()) / 2);
+			Point_2 far_pt;
+			far_pt.set<0>(500 * cos(rotation) + origin.get<0>());
+			far_pt.set<1>(500 * sin(rotation) + origin.get<1>());
+			Linestring_2 inter;
+			bg::append(inter, origin);
+			bg::append(inter, far_pt);
+			std::vector<Point_2> inter_pt_list;
+			bg::intersection(outer_poly, inter, inter_pt_list);
+			if (inter_pt_list.size() == 1) {
+				Point_2 inter_pt = inter_pt_list[0];
+#ifdef DIFFERENT_SIZE
+				double different_length = (distribution(engine) / 10000. * 2.5 + 1) * OBJ_LENGTH;
+				double different_width = OBJ_WIDTH;
+				generatePoly(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, different_length, different_width);
+
+#else
+				generateTetrisBlock(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, type);
+#endif
+				// if (yaw > 0) {
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() + length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() - length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() - length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() + length / 2));
+
+				// 	bg::correct(new_poly);
+				// }
+				// else if (yaw == 0) {
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() + width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() - width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() - width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() + width / 2));
+
+				// 	bg::correct(new_poly);
+				// }
+				if (bg::intersects(new_poly, exist_polys[0])) {
+					is_valid = false;
+				}
+				if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
+					is_valid = false;
+				}
+				for (int p = 0; p < all_created_polys.size(); p++) {
+					if (bg::intersects(all_created_polys[p], new_poly)) {
+						is_valid = false;
+						break;
+					}
+				}
+#ifdef SMALL_ENV
+				if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
+					is_valid = false;
+				}
+#endif
+#ifdef BIG_ENV
+				if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+					is_valid = false;
+				}
+#endif
+#ifdef BIG_ENV
+				if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+					is_valid = false;
+				}
+#endif
+#ifdef SMALL_ENV
+				if (new_poly.outer()[0].get<1>() > 1000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 1000 || new_poly.outer()[0].get<0>() < 0) {
+					is_valid = false;
+				}
+#endif
+			}
+			else {
+				std::cout << "error: intersection output more than 1 pts" << std::endl;
+			}
+		}
+	}
+	else if (exist_polys.size() == 2) {
+		Point_2 upper_left, upper_right, down_left, down_right;
+		Polygon_2 outer_poly_1, outer_poly_2;
+
+		getBoundingPoly(exist_polys[0], upper_left, upper_right, down_left, down_right, obj_between_dist);
+
+		// upper_left = exist_polys[0].outer()[1];
+		// upper_right = exist_polys[0].outer()[2];
+		// down_right = exist_polys[0].outer()[3];
+		// down_left = exist_polys[0].outer()[0];
+		// if (yaw > 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - width / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - length / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + width / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - length / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + width / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + length / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - width / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + length / 2);
+		// }
+		// else if (yaw == 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - length / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - width / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + length / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - width / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + length / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + width / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - length / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + width / 2);
+		// }
+		bg::append(outer_poly_1.outer(), upper_left);
+		bg::append(outer_poly_1.outer(), upper_right);
+		bg::append(outer_poly_1.outer(), down_right);
+		bg::append(outer_poly_1.outer(), down_left);
+		bg::correct(outer_poly_1);
+
+
+		getBoundingPoly(exist_polys[1], upper_left, upper_right, down_left, down_right, obj_between_dist);
+
+		// upper_left = exist_polys[1].outer()[1];
+		// upper_right = exist_polys[1].outer()[2];
+		// down_right = exist_polys[1].outer()[3];
+		// down_left = exist_polys[1].outer()[0];
+		// if (yaw > 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - width / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - length / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + width / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - length / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + width / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + length / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - width / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + length / 2);
+		// }
+		// else if (yaw == 0) {
+		// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - length / 2);
+		// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - width / 2);
+		// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + length / 2);
+		// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - width / 2);
+		// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + length / 2);
+		// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + width / 2);
+		// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - length / 2);
+		// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + width / 2);
+		// }
+		bg::append(outer_poly_2.outer(), upper_left);
+		bg::append(outer_poly_2.outer(), upper_right);
+		bg::append(outer_poly_2.outer(), down_right);
+		bg::append(outer_poly_2.outer(), down_left);
+		bg::correct(outer_poly_2);
+
+		std::vector<Polygon_2> union_polys;
+		bg::union_(outer_poly_1, outer_poly_2, union_polys);
+		if (union_polys.size() == 1) {
+			bool is_valid = false;
+			while (!is_valid) {
+
+				double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
+				Point_2 origin;
+				origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
+				origin.set<1>((upper_left.get<1>() + down_left.get<1>()) / 2);
+				Point_2 far_pt;
+				far_pt.set<0>(2500 * cos(rotation) + origin.get<0>());
+				far_pt.set<1>(2500 * sin(rotation) + origin.get<1>());
+				Linestring_2 inter;
+				bg::append(inter, origin);
+				bg::append(inter, far_pt);
+				std::vector<Point_2> inter_pt_list;
+				bg::intersection(union_polys[0], inter, inter_pt_list);
+				is_valid = true;
+
+				for (int k = 0; k < inter_pt_list.size(); k++) {
+					Point_2 inter_pt = inter_pt_list[k];
+					new_poly.outer().clear();
+					// if (yaw > 0) {
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() + length / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() - length / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() - length / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() + length / 2));
+
+					// 	bg::correct(new_poly);
+					// }
+					// else if (yaw == 0) {
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() + width / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() - width / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() - width / 2));
+					// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() + width / 2));
+
+					// 	bg::correct(new_poly);
+					// }
+#ifdef DIFFERENT_SIZE
+					double different_length = (distribution(engine) / 10000. * 2.5 + 1) * OBJ_LENGTH;
+					double different_width = OBJ_WIDTH;
+					generatePoly(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, different_length, different_width);
+
+#else
+					generateTetrisBlock(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, type);
+
+#endif
+
+					if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
+						is_valid = false;
+					}
+					for (int t = 0; t < exist_polys.size(); t++) {
+						if (bg::intersects(exist_polys[t], new_poly)) {
+							is_valid = false;
+							break;
+						}
+						if (isTwoPolyTooClose(exist_polys[t], new_poly)) {
+							is_valid = false;
+							break;
+						}
+
+					}
+					for (int p = 0; p < all_created_polys.size(); p++) {
+						if (bg::intersects(all_created_polys[p], new_poly)) {
+							is_valid = false;
+							break;
+						}
+					}
+#ifdef SMALL_ENV
+					if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
+						is_valid = false;
+					}
+#endif
+#ifdef BIG_ENV
+					if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+						is_valid = false;
+					}
+#endif
+#ifdef BIG_ENV
+					if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+						is_valid = false;
+					}
+#endif
+#ifdef SMALL_ENV
+					if (new_poly.outer()[0].get<1>() > 1000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 1000 || new_poly.outer()[0].get<0>() < 0) {
+						is_valid = false;
+					}
+#endif
+					if (is_valid) {
+						break;
+					}
+				}
+			}
+
+
+
+
+
+		}
+		else {
+			std::cout << "error(2 polys): union_ returns more than 1 polygons" << std::endl;
+		}
+
+
+	}
+	else {
+		Point_2 upper_left, upper_right, down_left, down_right;
+
+		Polygon_2 outer_poly_1, outer_poly_2;
+		Polygon_2 current_poly;
+		std::vector<Polygon_2> outer_poly_vector;
+		for (int k = 0; k < exist_polys.size(); k++) {
+			current_poly.outer().clear();
+			getBoundingPoly(exist_polys[k], upper_left, upper_right, down_left, down_right, obj_between_dist);
+
+			// upper_left = exist_polys[k].outer()[1];
+			// upper_right = exist_polys[k].outer()[2];
+			// down_right = exist_polys[k].outer()[3];
+			// down_left = exist_polys[k].outer()[0];
+			// if (yaw > 0) {
+			// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - width / 2);
+			// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - length / 2);
+			// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + width / 2);
+			// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - length / 2);
+			// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + width / 2);
+			// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + length / 2);
+			// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - width / 2);
+			// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + length / 2);
+			// }
+			// else if (yaw == 0) {
+			// 	upper_left.set<0>(upper_left.get<0>() - obj_between_dist - length / 2);
+			// 	upper_left.set<1>(upper_left.get<1>() - obj_between_dist - width / 2);
+			// 	upper_right.set<0>(upper_right.get<0>() + obj_between_dist + length / 2);
+			// 	upper_right.set<1>(upper_right.get<1>() - obj_between_dist - width / 2);
+			// 	down_right.set<0>(down_right.get<0>() + obj_between_dist + length / 2);
+			// 	down_right.set<1>(down_right.get<1>() + obj_between_dist + width / 2);
+			// 	down_left.set<0>(down_left.get<0>() - obj_between_dist - length / 2);
+			// 	down_left.set<1>(down_left.get<1>() + obj_between_dist + width / 2);
+			// }
+			bg::append(current_poly.outer(), upper_left);
+			bg::append(current_poly.outer(), upper_right);
+			bg::append(current_poly.outer(), down_right);
+			bg::append(current_poly.outer(), down_left);
+			bg::correct(current_poly);
+			outer_poly_vector.push_back(current_poly);
+		}
+		Polygon_2 first = outer_poly_vector.back();
+		outer_poly_vector.pop_back();
+		Polygon_2 second;
+		std::vector<Polygon_2> union_polys;
+		while (outer_poly_vector.size() > 0) {
+			second = outer_poly_vector.back();
+			bg::union_(first, second, union_polys);
+			first = union_polys[0];
+			outer_poly_vector.pop_back();
+		}
+		bool is_valid = false;
+		while (!is_valid) {
+
+			double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
+
+			//srand(rand()%10000);
+			Point_2 origin;
+			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
+			origin.set<1>((upper_left.get<1>() + down_left.get<1>()) / 2);
+			Point_2 far_pt;
+			far_pt.set<0>(2500 * cos(rotation) + origin.get<0>());
+			far_pt.set<1>(2500 * sin(rotation) + origin.get<1>());
+			Linestring_2 inter;
+			bg::append(inter, origin);
+			bg::append(inter, far_pt);
+			std::vector<Point_2> inter_pt_list;
+			bg::intersection(first, inter, inter_pt_list);
+
+			for (int k = 0; k < inter_pt_list.size(); k++) {
+				is_valid = true;
+				Point_2 inter_pt = inter_pt_list[k];
+				new_poly.outer().clear();
+				// if (yaw > 0) {
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() + length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - width / 2, inter_pt.get<1>() - length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() - length / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + width / 2, inter_pt.get<1>() + length / 2));
+
+				// 	bg::correct(new_poly);
+				// }
+				// else if (yaw == 0) {
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() + width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() - length / 2, inter_pt.get<1>() - width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() - width / 2));
+				// 	bg::append(new_poly.outer(), Point_2(inter_pt.get<0>() + length / 2, inter_pt.get<1>() + width / 2));
+
+				// 	bg::correct(new_poly);
+				// }
+
+#ifdef DIFFERENT_SIZE
+				double different_length = (distribution(engine) / 10000. * 2.5 + 1) * OBJ_LENGTH;
+				double different_width = OBJ_WIDTH;
+				generatePoly(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, different_length, different_width);
+
+#else
+				generateTetrisBlock(new_poly, inter_pt.get<0>(), inter_pt.get<1>(), yaw, type);
+
+#endif
+				if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
+					is_valid = false;
+				}
+				for (int t = 0; t < exist_polys.size(); t++) {
+					if (bg::intersects(exist_polys[t], new_poly)) {
+						is_valid = false;
+						break;
+					}
+					if (isTwoPolyTooClose(exist_polys[t], new_poly)) {
+						is_valid = false;
+						break;
+					}
+
+				}
+				for (int p = 0; p < all_created_polys.size(); p++) {
+					if (bg::intersects(all_created_polys[p], new_poly)) {
+						is_valid = false;
+						break;
+					}
+				}
+#ifdef SMALL_ENV
+				if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
+					is_valid = false;
+				}
+#endif
+#ifdef BIG_ENV
+				if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+					is_valid = false;
+				}
+#endif
+#ifdef BIG_ENV
+				if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+					is_valid = false;
+				}
+#endif
+#ifdef SMALL_ENV
+				if (new_poly.outer()[0].get<1>() > 1000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 1000 || new_poly.outer()[0].get<0>() < 0) {
+					is_valid = false;
+				}
+#endif
+				if (is_valid) {
+					break;
+				}
+			}
+		}
+
+
+	}
+
+	return new_poly;
 }
 
 
@@ -1870,64 +2369,64 @@ void MainWindow::createRandomProblem() {
 	yaw_min = -1.57;
 #ifdef BIG_ENV
 	if (numberOfPolygons == 5) {
-		x_min = 2000;
-		x_max = 3000;
-		y_min = 2000;
-		y_max = 3000;
+		x_min = 1000;
+		x_max = 1500;
+		y_min = 1000;
+		y_max = 1500;
 	}
 	else if (numberOfPolygons == 10) {
-		x_min = 1800;
-		x_max = 3200;
-		y_min = 1800;
-		y_max = 3200;
+		x_min = 1000;
+		x_max = 1500;
+		y_min = 1000;
+		y_max = 1500;
 	}
 	else if (numberOfPolygons == 15) {
-		x_min = 1600;
-		x_max = 3400;
-		y_min = 1600;
-		y_max = 3400;
+		x_min = 600;
+		x_max = 1900;
+		y_min = 600;
+		y_max = 1900;
 	}
 	else if (numberOfPolygons == 20) {
-		x_min = 1400;
-		x_max = 3600;
-		y_min = 1400;
-		y_max = 3600;
+		x_min = 600;
+		x_max = 1900;
+		y_min = 600;
+		y_max = 1900;
 	}
 	else if (numberOfPolygons == 25) {
-		x_min = 1200;
-		x_max = 3800;
-		y_min = 1200;
-		y_max = 3800;
+		x_min = 500;
+		x_max = 2000;
+		y_min = 500;
+		y_max = 2000;
 	}
 	else if (numberOfPolygons == 30) {
-		x_min = 1000;
-		x_max = 4000;
-		y_min = 1000;
-		y_max = 4000;
+		x_min = 300;
+		x_max = 2200;
+		y_min = 300;
+		y_max = 2200;
 	}
 	else if (numberOfPolygons == 35) {
 		x_min = 200;
-		x_max = 4800;
-		y_min = 500;
-		y_max = 4900;
+		x_max = 2300;
+		y_min = 200;
+		y_max = 2300;
 	}
 	else if (numberOfPolygons == 40) {
 		x_min = 200;
-		x_max = 4800;
+		x_max = 2300;
 		y_min = 200;
-		y_max = 4900;
+		y_max = 2300;
 	}
 	else if (numberOfPolygons == 45) {
-		x_min = 200;
-		x_max = 4800;
-		y_min = 500;
-		y_max = 4900;
+		x_min = 100;
+		x_max = 2400;
+		y_min = 100;
+		y_max = 2400;
 	}
 	else {
-		x_min = 200;
-		x_max = 4800;
-		y_min = 200;
-		y_max = 4900;
+		x_min = 0;
+		x_max = 2500;
+		y_min = 0;
+		y_max = 2500;
 	}
 #endif
 #ifdef SMALL_ENV
@@ -1941,7 +2440,7 @@ void MainWindow::createRandomProblem() {
 	bool is_start_valid = true;
 	
 #ifdef MIXED_CLUSTER
-	int each_cluster_num = 6;
+	int each_cluster_num = 25;
 	int cluster_num = 0;
 	int total_obj_num = 0;
 	std::vector<int> cluster_num_list;
@@ -2001,7 +2500,11 @@ void MainWindow::createRandomProblem() {
 			generatePoly(tp, center_x, center_y, yaw, different_length, different_width);
 			
 #else
+#ifdef SPECIAL_STRUCTURE
+			generateTetrisBlock(tp, center_x, center_y, yaw, 0);
+#else
 			generatePoly(tp, center_x, center_y, yaw);
+#endif
 #endif
 			for (auto p = created_polys.begin(); p != created_polys.end(); p++) {
 				if (bg::intersects(tp, *p)) {
@@ -2022,7 +2525,11 @@ void MainWindow::createRandomProblem() {
 			for (int j = 0; j < cluster_num_list[i] - 1; j++) {
 				std::cout << "obj num " << j << std::endl;
 				exist_polys.push_back(tp);
+#ifdef SPECIAL_STRUCTURE
+				tp = addNewNearTetris(exist_polys, created_polys);
+#else
 				tp = addNewNearPoly(exist_polys, created_polys);
+#endif
 				std::cout << "poly size:" << tp.outer().size() << std::endl;
 				created_polys.push_back(tp);
 
@@ -2042,12 +2549,12 @@ void MainWindow::createRandomProblem() {
 	bg::append(m_boundingPoly.outer(), p);
 #ifdef BIG_ENV
 	p.set<0>(0);
-	p.set<1>(5000);
+	p.set<1>(2500);
 	bg::append(m_boundingPoly.outer(), p);
-	p.set<0>(5000);
-	p.set<1>(5000);
+	p.set<0>(2500);
+	p.set<1>(2500);
 	bg::append(m_boundingPoly.outer(), p);
-	p.set<0>(5000);
+	p.set<0>(2500);
 	p.set<1>(0);
 #endif
 #ifdef SMALL_ENV
@@ -2094,7 +2601,7 @@ void MainWindow::createRandomProblem() {
 	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 	m_PolyAGIList.push_back(m_pBoundingPolyAGI2);
 	// m_scene.addItem(m_pBoundingPolyAGI2);
-	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/gazebo_env/";
+	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/tetris/";
 
 	std::ofstream ofs(output_filename + std::to_string((long long)numberOfPolygons)  + "_"+ std::to_string((long long)current_case) + ".txt", std::ofstream::out);
 	ofs << 30 << std::endl;
@@ -2108,9 +2615,9 @@ void MainWindow::createRandomProblem() {
 	ofs << 4 << std::endl;
 #ifdef BIG_ENV
 	ofs << 0 << " " << 0 << std::endl;
-	ofs << 0 << " " << 5000 << std::endl;
-	ofs << 5000 << " " << 5000 << std::endl;
-	ofs << 5000 << " " << 0 << std::endl;
+	ofs << 0 << " " << 2500 << std::endl;
+	ofs << 2500 << " " << 2500 << std::endl;
+	ofs << 2500 << " " << 0 << std::endl;
 #endif
 #ifdef SMALL_ENV
 	ofs << 0 << " " << 0 << std::endl;
@@ -2751,10 +3258,10 @@ void MainWindow::runTest() {
 	//number_objects_list.push_back(10);
 	//number_objects_list.push_back(15);
 	//number_objects_list.push_back(20);
-	//number_objects_list.push_back(25);
-	number_objects_list.push_back(100);
+	number_objects_list.push_back(25);
+	//number_objects_list.push_back(100);
 	std::ofstream myfile;
-	myfile.open("C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/diff_size_mixed/result.txt");
+	myfile.open("C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/tetris/result.txt");
 	for (int p = 0; p < number_different_objects; p++) {
 		 greedy_total_time = 0;
 		 tree_search_total_time = 0;
@@ -2782,7 +3289,7 @@ void MainWindow::runTest() {
 		 multiexit_separate_greedy = 0;
 
 		for (int k = 0; k < 10; k++) {
-			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/random_orientation/diff_size_mixed/";
+			std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/tetris/";
 			
 			output_filename += (std::to_string((long long)number_objects_list[p])+"/" + std::to_string((long long)number_objects_list[p]) + "_" +std::to_string((long long)k) + ".txt");
 			readProblemFromFile(output_filename);

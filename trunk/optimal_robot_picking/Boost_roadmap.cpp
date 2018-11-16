@@ -39,7 +39,7 @@
 
 
 #ifdef BIG_ENV
-#define START_X 0
+#define START_X 1250
 #define START_Y 2500
 #define EXIT_0_X 2500
 #define EXIT_0_Y 5000
@@ -818,10 +818,10 @@ double Roadmap::declutterUsingTruncatedTree(int num_objs) {
 	robot2d.setNumDimensions(2);
 	robot2d.regionOperating.setNumDimensions(2);
 #ifdef BIG_ENV
-	robot2d.regionOperating.center[0] = 2500.0;
-	robot2d.regionOperating.center[1] = 2500.0;
-	robot2d.regionOperating.size[0] = 5000.0;
-	robot2d.regionOperating.size[1] = 5000.0;
+	robot2d.regionOperating.center[0] = 1250.0;
+	robot2d.regionOperating.center[1] = 1250.0;
+	robot2d.regionOperating.size[0] = 2500.0;
+	robot2d.regionOperating.size[1] = 2500.0;
 #endif
 #ifdef SMALL_ENV
 	robot2d.regionOperating.center[0] = 500.0;
@@ -1796,8 +1796,11 @@ void Roadmap::buildRoadmap(Polygon2_list* pObsList, Polygon2_list* pObsInnerList
 		delete (*git);
 	}
 	m_obsBoundingCycleVec.clear();
-
+#ifdef SPECIAL_STRUCTURE
+	findGraspablePoses_structure();
+#else
 	findGraspablePoses();
+#endif
 	//buildVisibilityGraph();
 	QFont font;
 	font.setPointSizeF(5);
@@ -1831,6 +1834,452 @@ void Roadmap::buildRoadmap(Polygon2_list* pObsList, Polygon2_list* pObsInnerList
 	checkAndFixConnectivitget<1>();
 */
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::map<int, std::vector<Point_2>> Roadmap::new_findGraspablePoses_structure(Polygon2_list obs_list, Polygon2_list obs_outer_list) {
+	std::map<int, std::vector<Point_2>> graspCubeToBaseMap;
+	std::map<int, std::vector<Point_2>> graspcenterMap;
+	int current_object_index = 0;
+	Polygon2_list obstacle_list = m_obstaclePolyList;
+	Polygon2_list obstacle_outer_list = m_obstacleOuterPolyList;
+	QPen vertexPen = QPen(Qt::blue, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	for (auto i = obs_list.begin(); i != obs_list.end(); i++) {
+		current_object_index = 0;
+		Polygon_2 current = *i;
+		//find out the original index of current object, based on original global obstaclePolyList
+		for (auto ob = m_objectPolyList.begin(); ob != m_objectPolyList.end(); ob++) {
+			if (bg::equals(current, *ob)) {
+				break;
+			}
+			current_object_index++;
+		}
+		std::vector<Point_2> grasp_center_pts;
+		std::vector<Point_2> current_pts = current.outer();
+		double primary_axis_x = 0;
+		double primary_axis_y = 0;
+		double second_axis_x = 0;
+		double second_axis_y = 0;
+		double orientation = 0;
+#ifdef USE_TETRIS
+		if (current_pts.size() == 5) {
+
+
+			Point_2 pt_1 = current_pts[0];
+			Point_2 pt_2 = current_pts[1];
+			Point_2 pt_3 = current_pts[2];
+			Point_2 pt_4 = current_pts[3];
+			Point_2 center_pt;
+			center_pt.set<0>((pt_1.get<0>() + pt_2.get<0>() + pt_3.get<0>() + pt_4.get<0>()) / 4);
+			center_pt.set<1>((pt_1.get<1>() + pt_2.get<1>() + pt_3.get<1>() + pt_4.get<1>()) / 4);
+			Point_2 pt_12;
+			pt_12.set<0>((pt_1.get<0>() + pt_2.get<0>()) / 2);
+			pt_12.set<1>((pt_1.get<1>() + pt_2.get<1>()) / 2);
+			Point_2 pt_23;
+			pt_23.set<0>((pt_3.get<0>() + pt_2.get<0>()) / 2);
+			pt_23.set<1>((pt_3.get<1>() + pt_2.get<1>()) / 2);
+			Point_2 pt_34;
+			pt_34.set<0>((pt_3.get<0>() + pt_4.get<0>()) / 2);
+			pt_34.set<1>((pt_3.get<1>() + pt_4.get<1>()) / 2);
+			Point_2 pt_41;
+			pt_41.set<0>((pt_1.get<0>() + pt_4.get<0>()) / 2);
+			pt_41.set<1>((pt_1.get<1>() + pt_4.get<1>()) / 2);
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+			if (bg::distance(pt_12, pt_34) > bg::distance(pt_23, pt_41)) {
+				int center_num = bg::distance(pt_12, pt_34) / GRASP_CENTER_DIST;
+				double dist_x = (pt_12.get<0>() - pt_34.get<0>()) / center_num;
+				double dist_y = (pt_12.get<1>() - pt_34.get<1>()) / center_num;
+				primary_axis_length = bg::distance(pt_12, pt_34);
+				second_axis_length = bg::distance(pt_23, pt_41);
+				//compute the unit vector for primary axis
+				if (pt_12.get<0>() > pt_34.get<0>()) {
+					primary_axis_x = (pt_12.get<0>() - pt_34.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_12.get<1>() - pt_34.get<1>()) / primary_axis_length;
+
+					orientation = atan2(pt_12.get<1>() - pt_34.get<1>(), pt_12.get<0>() - pt_34.get<0>());
+				}
+				else if (pt_12.get<0>() < pt_34.get<0>()) {
+					primary_axis_x = (pt_34.get<0>() - pt_12.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_34.get<1>() - pt_12.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_34.get<1>() - pt_12.get<1>(), pt_34.get<0>() - pt_12.get<0>());
+				}
+				else if (pt_12.get<0>() == pt_34.get<0>()) {
+					primary_axis_x = 0;
+					primary_axis_y = 1;
+					orientation = 3.14159 / 2;
+				}
+				//compute the unit vector for secondary axis
+				if (pt_23.get<1>() > pt_41.get<1>()) {
+					second_axis_x = (pt_23.get<0>() - pt_41.get<0>()) / second_axis_length;
+					second_axis_y = (pt_23.get<1>() - pt_41.get<1>()) / second_axis_length;
+				}
+				else if (pt_23.get<1>() < pt_41.get<1>()) {
+					second_axis_x = (pt_41.get<0>() - pt_23.get<0>()) / second_axis_length;
+					second_axis_y = (pt_41.get<1>() - pt_23.get<1>()) / second_axis_length;
+				}
+				else if (pt_23.get<1>() == pt_41.get<1>()) {
+					second_axis_x = -1;
+					second_axis_y = 0;
+				}
+
+				for (int j = 2; j < center_num - 3; j++) {
+					Point_2 temp;
+
+					temp.set<0>(pt_34.get<0>() + (j + 1)*dist_x);
+					temp.set<1>(pt_34.get<1>() + (j + 1)*dist_y);
+					grasp_center_pts.push_back(temp);
+				}
+			}
+			else {
+				int center_num = bg::distance(pt_23, pt_41) / GRASP_CENTER_DIST;
+				double dist_x = (pt_23.get<0>() - pt_41.get<0>()) / center_num;
+				double dist_y = (pt_23.get<1>() - pt_41.get<1>()) / center_num;
+				primary_axis_length = bg::distance(pt_23, pt_41);
+				second_axis_length = bg::distance(pt_12, pt_34);
+				//compute the unit vector for primary axis
+				if (pt_23.get<0>() > pt_41.get<0>()) {
+					primary_axis_x = (pt_23.get<0>() - pt_41.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_23.get<1>() - pt_41.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_23.get<1>() - pt_41.get<1>(), pt_23.get<0>() - pt_41.get<0>());
+				}
+				else if (pt_23.get<0>() < pt_41.get<0>()) {
+					primary_axis_x = (pt_41.get<0>() - pt_23.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_41.get<1>() - pt_23.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_41.get<1>() - pt_23.get<1>(), pt_41.get<0>() - pt_23.get<0>());
+				}
+				else if (pt_23.get<0>() == pt_41.get<0>()) {
+					primary_axis_x = 0;
+					primary_axis_y = 1;
+					orientation = 3.14159 / 2;
+				}
+				//compute the unit vector for secondary axis
+				if (pt_12.get<1>() > pt_34.get<1>()) {
+					second_axis_x = (pt_12.get<0>() - pt_34.get<0>()) / second_axis_length;
+					second_axis_y = (pt_12.get<1>() - pt_34.get<1>()) / second_axis_length;
+				}
+				else if (pt_12.get<1>() < pt_34.get<1>()) {
+					second_axis_x = (pt_34.get<0>() - pt_12.get<0>()) / second_axis_length;
+					second_axis_y = (pt_34.get<1>() - pt_12.get<1>()) / second_axis_length;
+				}
+				else if (pt_12.get<1>() == pt_34.get<1>()) {
+					second_axis_x = -1;
+					second_axis_y = 0;
+				}
+				for (int j = 2; j < center_num - 3; j++) {
+					Point_2 temp;
+
+					temp.set<0>(pt_41.get<0>() + (j + 1)*dist_x);
+					temp.set<1>(pt_41.get<1>() + (j + 1)*dist_y);
+					grasp_center_pts.push_back(temp);
+				}
+			}
+
+		}
+		else if (current_pts.size() == 7) {
+			Point_2 short_bar, long_bar_1, long_bar_2, long_bar_3;
+
+			Point_2 pt_1 = current_pts[0];
+			Point_2 pt_2 = current_pts[1];
+			Point_2 pt_3 = current_pts[5];
+
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(pt_1, pt_3);
+			second_axis_length = bg::distance(pt_1, pt_2);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (pt_1.get<0>() - pt_3.get<0>()) / primary_axis_length;
+			primary_axis_y = (pt_1.get<1>() - pt_3.get<1>()) / primary_axis_length;
+			orientation = atan2(pt_2.get<1>() - pt_1.get<1>(), pt_2.get<0>() - pt_1.get<0>());
+			//compute the unit vector for secondary axis
+			second_axis_x = (pt_1.get<0>() - pt_2.get<0>()) / second_axis_length;
+			second_axis_y = (pt_1.get<1>() - pt_2.get<1>()) / second_axis_length;
+
+
+			short_bar.set<0>((current_pts[1].get<0>() + current_pts[2].get<0>()) / 2.0 + 5 * second_axis_x);
+			short_bar.set<1>((current_pts[1].get<1>() + current_pts[2].get<1>()) / 2.0 + 5 * second_axis_y);
+			grasp_center_pts.push_back(short_bar);
+
+			long_bar_1.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 10 * primary_axis_x);
+			long_bar_1.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_1);
+
+			long_bar_2.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 20 * primary_axis_x);
+			long_bar_2.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 20 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_2);
+
+			long_bar_3.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 30 * primary_axis_x);
+			long_bar_3.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 30 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_3);
+
+		}
+		else if (current_pts.size() == 9) {
+			Point_2 bar_1, bar_2, bar_3;
+
+			Point_2 pt_0 = current_pts[0];
+			Point_2 pt_5 = current_pts[5];
+			Point_2 pt_1 = current_pts[1];
+			Point_2 pt_2 = current_pts[2];
+
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(pt_0, pt_5);
+			second_axis_length = bg::distance(pt_1, pt_2);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (pt_0.get<0>() - pt_5.get<0>()) / primary_axis_length;
+			primary_axis_y = (pt_0.get<1>() - pt_5.get<1>()) / primary_axis_length;
+			//compute the unit vector for secondary axis
+			second_axis_x = (pt_1.get<0>() - pt_2.get<0>()) / second_axis_length;
+			second_axis_y = (pt_1.get<1>() - pt_2.get<1>()) / second_axis_length;
+
+
+			bar_1.set<0>((current_pts[0].get<0>() + current_pts[7].get<0>()) / 2.0 - 10 * primary_axis_x);
+			bar_1.set<1>((current_pts[0].get<1>() + current_pts[7].get<1>()) / 2.0 - 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_1);
+
+			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * primary_axis_x);
+			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_2);
+
+			bar_3.set<0>((current_pts[5].get<0>() + current_pts[6].get<0>()) / 2.0 + 10 * primary_axis_x);
+			bar_3.set<1>((current_pts[5].get<1>() + current_pts[6].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_3);
+
+
+
+
+
+
+		}
+#else
+		if (current_pts.size() == 13) {
+			Point_2 left_bar, right_upper_bar, right_down_bar;
+			left_bar.set<0>(current_pts[0].get<0>() + 5);
+			left_bar.set<1>(current_pts[0].get<1>() + 7.5);
+			grasp_center_pts.push_back(left_bar);
+			right_upper_bar.set<0>(current_pts[3].get<0>() - 5);
+			right_upper_bar.set<1>(current_pts[3].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_upper_bar);
+			right_down_bar.set<0>(current_pts[7].get<0>() - 5);
+			right_down_bar.set<1>(current_pts[7].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_down_bar);
+			primary_axis_x = 1;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 1;
+		}
+		else if (current_pts.size() == 9) {
+			Point_2 bottom_right_bar, upper_left_bar;
+			bottom_right_bar.set<0>(current_pts[5].get<0>() + 7.5);
+			bottom_right_bar.set<1>(current_pts[5].get<1>() - 5);
+			grasp_center_pts.push_back(bottom_right_bar);
+			upper_left_bar.set<0>(current_pts[0].get<0>() + 7.5);
+			upper_left_bar.set<1>(current_pts[0].get<1>() + 5);
+			grasp_center_pts.push_back(upper_left_bar);
+			primary_axis_x = 0;
+			primary_axis_y = 1;
+			second_axis_x = 1;
+			second_axis_y = 0;
+		}
+		else if (current_pts.size() == 7) {
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(current_pts[0], current_pts[5]);
+			second_axis_length = bg::distance(current_pts[0], current_pts[1]);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (current_pts[0].get<0>() - current_pts[5].get<0>()) / primary_axis_length;
+			primary_axis_y = (current_pts[0].get<1>() - current_pts[5].get<1>()) / primary_axis_length;
+			//orientation = atan2(pt_2.get<1>() - pt_1.get<1>(), pt_2.get<0>() - pt_1.get<0>());
+			//compute the unit vector for secondary axis
+			second_axis_x = (current_pts[0].get<0>() - current_pts[1].get<0>()) / second_axis_length;
+			second_axis_y = (current_pts[0].get<1>() - current_pts[1].get<1>()) / second_axis_length;
+
+
+			Point_2 bottom_right_bar, upper_left_bar;
+			bottom_right_bar.set<0>((current_pts[5].get<0>() + current_pts[4].get<0>()) / 2.0 + 5 * primary_axis_x);
+			bottom_right_bar.set<1>((current_pts[5].get<1>() + current_pts[4].get<1>()) / 2.0 + 5 * primary_axis_y);
+
+			//grasp_center_pts.push_back(bottom_right_bar);
+			upper_left_bar.set<0>((current_pts[0].get<0>() + current_pts[1].get<0>()) / 2.0 - 5 * primary_axis_x);
+			upper_left_bar.set<1>((current_pts[0].get<1>() + current_pts[1].get<1>()) / 2.0 - 5 * primary_axis_y);
+			grasp_center_pts.push_back(upper_left_bar);
+		}
+		else if (current_pts.size() == 11) {
+			Point_2 left_bar, right_upper_bar;
+			left_bar.set<0>(current_pts[0].get<0>() + 5);
+			left_bar.set<1>(current_pts[0].get<1>() + 7.5);
+			grasp_center_pts.push_back(left_bar);
+			right_upper_bar.set<0>(current_pts[3].get<0>() - 5);
+			right_upper_bar.set<1>(current_pts[3].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_upper_bar);
+			primary_axis_x = 1;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 1;
+		}
+
+#endif
+		graspcenterMap[current_object_index] = grasp_center_pts;
+		// iterate all the center points in a single cube object, for each center point, get all the potential robot base positions, 
+		// and evaluate whether it is in collision
+		std::vector<Point_2> graspRobotBase_list;
+		for (int k = 0; k < grasp_center_pts.size(); k++) {
+			// for each center point, the circle points around it are candidates, check collision, and whether there is enough space o
+			// on the other end of the center point
+			//mm_scene->addEllipse(grasp_center_pts[k].get<0>(), grasp_center_pts[k].get<1>(), 0.5, 0.5, vertexPen);
+			double gripper_space_x_side_1 = 0;
+			double gripper_space_y_side_1 = 0;
+			double gripper_space_x_side_2 = 0;
+			double gripper_space_y_side_2 = 0;
+			//side_1 is against the direction of second_axis, side_2 is same with the direction of second axis
+			gripper_space_x_side_1 = grasp_center_pts[k].get<0>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_x;
+			gripper_space_y_side_1 = grasp_center_pts[k].get<1>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_y;
+			gripper_space_x_side_2 = grasp_center_pts[k].get<0>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_x;
+			gripper_space_y_side_2 = grasp_center_pts[k].get<1>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_y;
+			Polygon_2 gripper_space_side_1, gripper_space_side_2;
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 + GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 + GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 + GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 + GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::correct(gripper_space_side_1);
+
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 + GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 + GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 + GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 + GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::correct(gripper_space_side_2);
+			bool side_1_ok = true; // against the second axis
+			bool side_2_ok = true; // along the second axis
+			for (auto p = obs_list.begin(); p != obs_list.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_1)) {
+						side_1_ok = false;
+						break;
+					}
+				}
+			}
+			for (auto p = obstacle_list.begin(); p != obstacle_list.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_1)) {
+						side_1_ok = false;
+						break;
+					}
+				}
+			}
+			for (auto p = obs_list.begin(); p != obs_list.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_2)) {
+						side_2_ok = false;
+						break;
+					}
+				}
+			}
+			for (auto p = obstacle_list.begin(); p != obstacle_list.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_2)) {
+						side_2_ok = false;
+						break;
+					}
+				}
+			}
+			std::vector<Point_2> grasp_pose_pts = getCirclePoints(grasp_center_pts[k], PICK_DIST, orientation);
+			bool validGraspPose = true;
+			for (int q = 0; q < grasp_pose_pts.size(); q++) {
+				validGraspPose = true;
+				//mm_scene->addEllipse(grasp_pose_pts[q].get<0>(), grasp_pose_pts[q].get<1>(), 0.5, 0.5, vertexPen);
+				double temp_x = grasp_pose_pts[q].get<0>() - grasp_center_pts[k].get<0>();
+				double temp_y = grasp_pose_pts[q].get<1>() - grasp_center_pts[k].get<1>();
+				double gripper_space_x = 0;
+				double gripper_space_y = 0;
+				/*
+				if (temp_x*second_axis_x + temp_y*second_axis_y > 0) {
+				if (!side_1_ok) {
+				continue;
+				}
+				gripper_space_x = grasp_center_pts[k].get<0>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_x;
+				gripper_space_y = grasp_center_pts[k].get<1>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_y;
+
+				}
+				else {
+				if (!side_2_ok) {
+				continue;
+				}
+				gripper_space_x = grasp_center_pts[k].get<0>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_x;
+				gripper_space_y = grasp_center_pts[k].get<1>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_y;
+				}
+				*/
+				if (!(side_1_ok && side_2_ok)) {
+					continue;
+				}
+				for (auto x = obs_outer_list.begin(); x != obs_outer_list.end(); x++) {
+					if (bg::within(grasp_pose_pts[q], *x)) {
+						validGraspPose = false;
+						break;
+					}
+				}
+				for (auto x = obstacle_outer_list.begin(); x != obstacle_outer_list.end(); x++) {
+					if (bg::within(grasp_pose_pts[q], *x)) {
+						validGraspPose = false;
+						break;
+					}
+				}
+				if (validGraspPose) {
+					graspRobotBase_list.push_back(grasp_pose_pts[q]);
+				}
+			}
+		}
+		//after examining a single object, graspRobotBase_list contains the valid grasp pose robot bases for current object 
+		// with index i in m_objectPolyList
+		graspCubeToBaseMap[current_object_index] = graspRobotBase_list;
+		//current_object_index++;
+
+		for (int o = 0; o < graspRobotBase_list.size(); o++) {
+			//mm_scene->addEllipse(graspRobotBase_list[o].get<0>() - ROBOT_RADIUS, graspRobotBase_list[o].get<1>() - ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 2, vertexPen);
+
+		}
+
+	}
+	return graspCubeToBaseMap;
+}
+
 
 
 
@@ -2005,7 +2454,7 @@ std::map<int, std::vector<Point_2>> Roadmap::new_findGraspablePoses(Polygon2_lis
 				if (p != i) {
 					if (bg::intersects(*p, gripper_space_side_1)) {
 						side_1_ok = false;
-						break;
+						break;	
 					}
 				}
 			}
@@ -2268,7 +2717,7 @@ void Roadmap::findGraspablePoses() {
 			bool validGraspPose = true;
 			for (int q = 0; q < grasp_pose_pts.size(); q++) {
 				validGraspPose = true;
-				mm_scene->addEllipse(grasp_pose_pts[q].get<0>(), grasp_pose_pts[q].get<1>(), 0.5, 0.5, vertexPen);
+				//mm_scene->addEllipse(grasp_pose_pts[q].get<0>(), grasp_pose_pts[q].get<1>(), 0.5, 0.5, vertexPen);
 				double temp_x = grasp_pose_pts[q].get<0>() - grasp_center_pts[k].get<0>();
 				double temp_y = grasp_pose_pts[q].get<1>() - grasp_center_pts[k].get<1>();
 				double gripper_space_x = 0;
@@ -2310,8 +2759,422 @@ void Roadmap::findGraspablePoses() {
 		current_object_index++;
 		
 		for (int o = 0; o < graspRobotBase_list.size(); o++) {
-			mm_scene->addEllipse(graspRobotBase_list[o].get<0>() - ROBOT_RADIUS, graspRobotBase_list[o].get<1>() - ROBOT_RADIUS, ROBOT_RADIUS*2 , ROBOT_RADIUS*2, vertexPen);
+			//mm_scene->addEllipse(graspRobotBase_list[o].get<0>() - ROBOT_RADIUS, graspRobotBase_list[o].get<1>() - ROBOT_RADIUS, ROBOT_RADIUS*2 , ROBOT_RADIUS*2, vertexPen);
 			
+		}
+
+	}
+
+}
+
+
+void Roadmap::findGraspablePoses_structure() {
+	m_graspCubeToBaseMap.clear();
+	int current_object_index = 0;
+	QPen vertexPen = QPen(Qt::blue, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	for (auto i = m_objectPolyList.begin(); i != m_objectPolyList.end(); i++) {
+		Polygon_2 current = *i;
+		std::vector<Point_2> grasp_center_pts;
+		std::vector<Point_2> current_pts = current.outer();
+		double primary_axis_x = 0;
+		double primary_axis_y = 0;
+		double second_axis_x = 0;
+		double second_axis_y = 0;
+		double orientation = 0;
+#ifdef USE_TETRIS
+		if (current_pts.size() == 5) {
+
+
+			Point_2 pt_1 = current_pts[0];
+			Point_2 pt_2 = current_pts[1];
+			Point_2 pt_3 = current_pts[2];
+			Point_2 pt_4 = current_pts[3];
+			Point_2 center_pt;
+			center_pt.set<0>((pt_1.get<0>() + pt_2.get<0>() + pt_3.get<0>() + pt_4.get<0>()) / 4);
+			center_pt.set<1>((pt_1.get<1>() + pt_2.get<1>() + pt_3.get<1>() + pt_4.get<1>()) / 4);
+			Point_2 pt_12;
+			pt_12.set<0>((pt_1.get<0>() + pt_2.get<0>()) / 2);
+			pt_12.set<1>((pt_1.get<1>() + pt_2.get<1>()) / 2);
+			Point_2 pt_23;
+			pt_23.set<0>((pt_3.get<0>() + pt_2.get<0>()) / 2);
+			pt_23.set<1>((pt_3.get<1>() + pt_2.get<1>()) / 2);
+			Point_2 pt_34;
+			pt_34.set<0>((pt_3.get<0>() + pt_4.get<0>()) / 2);
+			pt_34.set<1>((pt_3.get<1>() + pt_4.get<1>()) / 2);
+			Point_2 pt_41;
+			pt_41.set<0>((pt_1.get<0>() + pt_4.get<0>()) / 2);
+			pt_41.set<1>((pt_1.get<1>() + pt_4.get<1>()) / 2);
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+			if (bg::distance(pt_12, pt_34) > bg::distance(pt_23, pt_41)) {
+				int center_num = bg::distance(pt_12, pt_34) / GRASP_CENTER_DIST;
+				double dist_x = (pt_12.get<0>() - pt_34.get<0>()) / center_num;
+				double dist_y = (pt_12.get<1>() - pt_34.get<1>()) / center_num;
+				primary_axis_length = bg::distance(pt_12, pt_34);
+				second_axis_length = bg::distance(pt_23, pt_41);
+				//compute the unit vector for primary axis
+				if (pt_12.get<0>() > pt_34.get<0>()) {
+					primary_axis_x = (pt_12.get<0>() - pt_34.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_12.get<1>() - pt_34.get<1>()) / primary_axis_length;
+
+					orientation = atan2(pt_12.get<1>() - pt_34.get<1>(), pt_12.get<0>() - pt_34.get<0>());
+				}
+				else if (pt_12.get<0>() < pt_34.get<0>()) {
+					primary_axis_x = (pt_34.get<0>() - pt_12.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_34.get<1>() - pt_12.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_34.get<1>() - pt_12.get<1>(), pt_34.get<0>() - pt_12.get<0>());
+				}
+				else if (pt_12.get<0>() == pt_34.get<0>()) {
+					primary_axis_x = 0;
+					primary_axis_y = 1;
+					orientation = 3.14159 / 2;
+				}
+				//compute the unit vector for secondary axis
+				if (pt_23.get<1>() > pt_41.get<1>()) {
+					second_axis_x = (pt_23.get<0>() - pt_41.get<0>()) / second_axis_length;
+					second_axis_y = (pt_23.get<1>() - pt_41.get<1>()) / second_axis_length;
+				}
+				else if (pt_23.get<1>() < pt_41.get<1>()) {
+					second_axis_x = (pt_41.get<0>() - pt_23.get<0>()) / second_axis_length;
+					second_axis_y = (pt_41.get<1>() - pt_23.get<1>()) / second_axis_length;
+				}
+				else if (pt_23.get<1>() == pt_41.get<1>()) {
+					second_axis_x = -1;
+					second_axis_y = 0;
+				}
+
+				for (int j = 2; j < center_num - 3; j++) {
+					Point_2 temp;
+
+					temp.set<0>(pt_34.get<0>() + (j + 1)*dist_x);
+					temp.set<1>(pt_34.get<1>() + (j + 1)*dist_y);
+					grasp_center_pts.push_back(temp);
+				}
+			}
+			else {
+				int center_num = bg::distance(pt_23, pt_41) / GRASP_CENTER_DIST;
+				double dist_x = (pt_23.get<0>() - pt_41.get<0>()) / center_num;
+				double dist_y = (pt_23.get<1>() - pt_41.get<1>()) / center_num;
+				primary_axis_length = bg::distance(pt_23, pt_41);
+				second_axis_length = bg::distance(pt_12, pt_34);
+				//compute the unit vector for primary axis
+				if (pt_23.get<0>() > pt_41.get<0>()) {
+					primary_axis_x = (pt_23.get<0>() - pt_41.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_23.get<1>() - pt_41.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_23.get<1>() - pt_41.get<1>(), pt_23.get<0>() - pt_41.get<0>());
+				}
+				else if (pt_23.get<0>() < pt_41.get<0>()) {
+					primary_axis_x = (pt_41.get<0>() - pt_23.get<0>()) / primary_axis_length;
+					primary_axis_y = (pt_41.get<1>() - pt_23.get<1>()) / primary_axis_length;
+					orientation = atan2(pt_41.get<1>() - pt_23.get<1>(), pt_41.get<0>() - pt_23.get<0>());
+				}
+				else if (pt_23.get<0>() == pt_41.get<0>()) {
+					primary_axis_x = 0;
+					primary_axis_y = 1;
+					orientation = 3.14159 / 2;
+				}
+				//compute the unit vector for secondary axis
+				if (pt_12.get<1>() > pt_34.get<1>()) {
+					second_axis_x = (pt_12.get<0>() - pt_34.get<0>()) / second_axis_length;
+					second_axis_y = (pt_12.get<1>() - pt_34.get<1>()) / second_axis_length;
+				}
+				else if (pt_12.get<1>() < pt_34.get<1>()) {
+					second_axis_x = (pt_34.get<0>() - pt_12.get<0>()) / second_axis_length;
+					second_axis_y = (pt_34.get<1>() - pt_12.get<1>()) / second_axis_length;
+				}
+				else if (pt_12.get<1>() == pt_34.get<1>()) {
+					second_axis_x = -1;
+					second_axis_y = 0;
+				}
+				for (int j = 2; j < center_num - 3; j++) {
+					Point_2 temp;
+
+					temp.set<0>(pt_41.get<0>() + (j + 1)*dist_x);
+					temp.set<1>(pt_41.get<1>() + (j + 1)*dist_y);
+					grasp_center_pts.push_back(temp);
+				}
+			}
+			
+		}
+		else if (current_pts.size() == 7) {
+			Point_2 short_bar, long_bar_1, long_bar_2, long_bar_3;
+
+			Point_2 pt_1 = current_pts[0];
+			Point_2 pt_2 = current_pts[1];
+			Point_2 pt_3 = current_pts[5];
+
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+			
+			
+			primary_axis_length = bg::distance(pt_1, pt_3);
+			second_axis_length = bg::distance(pt_1, pt_2);
+				//compute the unit vector for primary axis
+			
+			primary_axis_x = (pt_1.get<0>() - pt_3.get<0>()) / primary_axis_length;
+			primary_axis_y = (pt_1.get<1>() - pt_3.get<1>()) / primary_axis_length;
+			orientation = atan2(pt_2.get<1>() - pt_1.get<1>(), pt_2.get<0>() - pt_1.get<0>());
+				//compute the unit vector for secondary axis
+			second_axis_x = (pt_1.get<0>() - pt_2.get<0>()) / second_axis_length;
+			second_axis_y = (pt_1.get<1>() - pt_2.get<1>()) / second_axis_length;
+
+			
+			short_bar.set<0>((current_pts[1].get<0>() + current_pts[2].get<0>())/2.0 + 5*second_axis_x);
+			short_bar.set<1>((current_pts[1].get<1>() + current_pts[2].get<1>()) / 2.0 + 5*second_axis_y);
+			grasp_center_pts.push_back(short_bar);
+
+			long_bar_1.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 10 * primary_axis_x);
+			long_bar_1.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_1);
+
+			long_bar_2.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 20 * primary_axis_x);
+			long_bar_2.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 20 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_2);
+	
+			long_bar_3.set<0>((current_pts[4].get<0>() + current_pts[5].get<0>()) / 2.0 + 30 * primary_axis_x);
+			long_bar_3.set<1>((current_pts[4].get<1>() + current_pts[5].get<1>()) / 2.0 + 30 * primary_axis_y);
+			grasp_center_pts.push_back(long_bar_3);
+
+		}
+		else if (current_pts.size() == 9) {
+			Point_2 bar_1, bar_2, bar_3;
+
+			Point_2 pt_0 = current_pts[0];
+			Point_2 pt_5 = current_pts[5];
+			Point_2 pt_1 = current_pts[1];
+			Point_2 pt_2 = current_pts[2];
+
+			primary_axis_x = 0;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 0;
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(pt_0, pt_5);
+			second_axis_length = bg::distance(pt_1, pt_2);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (pt_0.get<0>() - pt_5.get<0>()) / primary_axis_length;
+			primary_axis_y = (pt_0.get<1>() - pt_5.get<1>()) / primary_axis_length;
+			//compute the unit vector for secondary axis
+			second_axis_x = (pt_1.get<0>() - pt_2.get<0>()) / second_axis_length;
+			second_axis_y = (pt_1.get<1>() - pt_2.get<1>()) / second_axis_length;
+
+
+			bar_1.set<0>((current_pts[0].get<0>() + current_pts[7].get<0>()) / 2.0 - 10 * primary_axis_x);
+			bar_1.set<1>((current_pts[0].get<1>() + current_pts[7].get<1>()) / 2.0 - 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_1);
+
+			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * primary_axis_x);
+			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_2);
+
+			bar_3.set<0>((current_pts[5].get<0>() + current_pts[6].get<0>()) / 2.0 + 10 * primary_axis_x);
+			bar_3.set<1>((current_pts[5].get<1>() + current_pts[6].get<1>()) / 2.0 + 10 * primary_axis_y);
+			grasp_center_pts.push_back(bar_3);
+
+
+
+
+
+
+		}
+#else
+		if (current_pts.size() == 13) {
+			Point_2 left_bar, right_upper_bar, right_down_bar;
+			left_bar.set<0>(current_pts[0].get<0>() + 5);
+			left_bar.set<1>(current_pts[0].get<1>() + 7.5);
+			grasp_center_pts.push_back(left_bar);
+			right_upper_bar.set<0>(current_pts[3].get<0>() - 5);
+			right_upper_bar.set<1>(current_pts[3].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_upper_bar);
+			right_down_bar.set<0>(current_pts[7].get<0>() - 5);
+			right_down_bar.set<1>(current_pts[7].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_down_bar);
+			primary_axis_x = 1;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 1;
+		}
+		else if (current_pts.size() == 9) {
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(current_pts[0], current_pts[7]);
+			second_axis_length = bg::distance(current_pts[0], current_pts[1]);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (current_pts[0].get<0>() - current_pts[7].get<0>()) / primary_axis_length;
+			primary_axis_y = (current_pts[0].get<1>() - current_pts[7].get<1>()) / primary_axis_length;
+			//orientation = atan2(pt_2.get<1>() - pt_1.get<1>(), pt_2.get<0>() - pt_1.get<0>());
+			//compute the unit vector for secondary axis
+			second_axis_x = (current_pts[0].get<0>() - current_pts[1].get<0>()) / second_axis_length;
+			second_axis_y = (current_pts[0].get<1>() - current_pts[1].get<1>()) / second_axis_length;
+
+
+			Point_2 bottom_right_bar, upper_left_bar;
+			bottom_right_bar.set<0>((current_pts[5].get<0>() + current_pts[4].get<0>())/2.0 + 5*primary_axis_x);
+			bottom_right_bar.set<1>((current_pts[5].get<1>() + current_pts[4].get<1>()) / 2.0 + 5 * primary_axis_y);
+
+			grasp_center_pts.push_back(bottom_right_bar);
+			upper_left_bar.set<0>((current_pts[0].get<0>() + current_pts[1].get<0>())/2.0 - 5*primary_axis_x);
+			upper_left_bar.set<1>((current_pts[0].get<1>() + current_pts[1].get<1>()) / 2.0 - 5 * primary_axis_y); 
+			grasp_center_pts.push_back(upper_left_bar);
+		}
+		else if (current_pts.size() == 7) {
+			double primary_axis_length = 0;
+			double second_axis_length = 0;
+			orientation = 0;
+
+
+			primary_axis_length = bg::distance(current_pts[0], current_pts[5]);
+			second_axis_length = bg::distance(current_pts[0], current_pts[1]);
+			//compute the unit vector for primary axis
+
+			primary_axis_x = (current_pts[0].get<0>() - current_pts[5].get<0>()) / primary_axis_length;
+			primary_axis_y = (current_pts[0].get<1>() - current_pts[5].get<1>()) / primary_axis_length;
+			//orientation = atan2(pt_2.get<1>() - pt_1.get<1>(), pt_2.get<0>() - pt_1.get<0>());
+			//compute the unit vector for secondary axis
+			second_axis_x = (current_pts[0].get<0>() - current_pts[1].get<0>()) / second_axis_length;
+			second_axis_y = (current_pts[0].get<1>() - current_pts[1].get<1>()) / second_axis_length;
+
+
+			Point_2 bottom_right_bar, upper_left_bar;
+			bottom_right_bar.set<0>((current_pts[5].get<0>() + current_pts[4].get<0>()) / 2.0 + 5 * primary_axis_x);
+			bottom_right_bar.set<1>((current_pts[5].get<1>() + current_pts[4].get<1>()) / 2.0 + 5 * primary_axis_y);
+
+			//grasp_center_pts.push_back(bottom_right_bar);
+			upper_left_bar.set<0>((current_pts[0].get<0>() + current_pts[1].get<0>()) / 2.0 - 5 * primary_axis_x);
+			upper_left_bar.set<1>((current_pts[0].get<1>() + current_pts[1].get<1>()) / 2.0 - 5 * primary_axis_y);
+			grasp_center_pts.push_back(upper_left_bar);
+		}
+		else if (current_pts.size() == 11) {
+			Point_2 left_bar, right_upper_bar;
+			left_bar.set<0>(current_pts[0].get<0>() + 5);
+			left_bar.set<1>(current_pts[0].get<1>() + 7.5);
+			grasp_center_pts.push_back(left_bar);
+			right_upper_bar.set<0>(current_pts[3].get<0>() - 5);
+			right_upper_bar.set<1>(current_pts[3].get<1>() + 7.5);
+			grasp_center_pts.push_back(right_upper_bar);
+			primary_axis_x = 1;
+			primary_axis_y = 0;
+			second_axis_x = 0;
+			second_axis_y = 1;
+		}
+#endif		
+
+		m_graspcenterMap[current_object_index] = grasp_center_pts;
+		// iterate all the center points in a single cube object, for each center point, get all the potential robot base positions, 
+		// and evaluate whether it is in collision
+		std::vector<Point_2> graspRobotBase_list;
+		for (int k = 0; k < grasp_center_pts.size(); k++) {
+			// for each center point, the circle points around it are candidates, check collision, and whether there is enough space o
+			// on the other end of the center point
+			//mm_scene->addEllipsme(grasp_center_pts[k].get<0>(), grasp_center_pts[k].get<1>(), 0.5, 0.5, vertexPen);
+			double gripper_space_x_side_1 = 0;
+			double gripper_space_y_side_1 = 0;
+			double gripper_space_x_side_2 = 0;
+			double gripper_space_y_side_2 = 0;
+			//side_1 is against the direction of second_axis, side_2 is same with the direction of second axis
+			gripper_space_x_side_1 = grasp_center_pts[k].get<0>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_x;
+			gripper_space_y_side_1 = grasp_center_pts[k].get<1>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_y;
+			gripper_space_x_side_2 = grasp_center_pts[k].get<0>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_x;
+			gripper_space_y_side_2 = grasp_center_pts[k].get<1>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH / 2 + 1) * second_axis_y;
+			Polygon_2 gripper_space_side_1, gripper_space_side_2;
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 + GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 + GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 + GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 + GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_1.outer(), Point_2(gripper_space_x_side_1 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_1 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::correct(gripper_space_side_1);
+
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 + GRIPPER_LENGTH / 2 * primary_axis_x + GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 + GRIPPER_LENGTH / 2 * primary_axis_y + GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 + GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 + GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::append(gripper_space_side_2.outer(), Point_2(gripper_space_x_side_2 - GRIPPER_LENGTH / 2 * primary_axis_x - GRIPPER_WIDTH / 2 * second_axis_x, gripper_space_y_side_2 - GRIPPER_LENGTH / 2 * primary_axis_y - GRIPPER_WIDTH / 2 * second_axis_y));
+			bg::correct(gripper_space_side_2);
+			bool side_1_ok = true; // against the second axis
+			bool side_2_ok = true; // along the second axis
+			for (auto p = m_objectPolyList.begin(); p != m_objectPolyList.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_1)) {
+						side_1_ok = false;
+						break;
+					}
+				}
+			}
+			for (auto p = m_objectPolyList.begin(); p != m_objectPolyList.end(); p++) {
+				if (p != i) {
+					if (bg::intersects(*p, gripper_space_side_2)) {
+						side_2_ok = false;
+						break;
+					}
+				}
+			}
+			std::vector<Point_2> grasp_pose_pts = getCirclePoints(grasp_center_pts[k], PICK_DIST, orientation);
+			bool validGraspPose = true;
+			for (int q = 0; q < grasp_pose_pts.size(); q++) {
+				validGraspPose = true;
+				//mm_scene->addEllipse(grasp_pose_pts[q].get<0>(), grasp_pose_pts[q].get<1>(), 0.5, 0.5, vertexPen);
+				double temp_x = grasp_pose_pts[q].get<0>() - grasp_center_pts[k].get<0>();
+				double temp_y = grasp_pose_pts[q].get<1>() - grasp_center_pts[k].get<1>();
+				double gripper_space_x = 0;
+				double gripper_space_y = 0;
+				/*
+				if (temp_x*second_axis_x + temp_y*second_axis_y > 0) {
+				if (!side_1_ok) {
+				continue;
+				}
+				gripper_space_x = grasp_center_pts[k].get<0>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_x;
+				gripper_space_y = grasp_center_pts[k].get<1>() - (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_y;
+
+				}
+				else {
+				if (!side_2_ok) {
+				continue;
+				}
+				gripper_space_x = grasp_center_pts[k].get<0>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_x;
+				gripper_space_y = grasp_center_pts[k].get<1>() + (CUBE_WIDTH / 2 + GRIPPER_WIDTH/2+1) * second_axis_y;
+				}
+				*/
+				if (!(side_1_ok && side_2_ok)) {
+					continue;
+				}
+				for (auto x = m_objectOuterPolyList.begin(); x != m_objectOuterPolyList.end(); x++) {
+					if (bg::within(grasp_pose_pts[q], *x)) {
+						validGraspPose = false;
+						break;
+					}
+				}
+				if (validGraspPose) {
+					graspRobotBase_list.push_back(grasp_pose_pts[q]);
+				}
+			}
+		}
+		//after examining a single object, graspRobotBase_list contains the valid grasp pose robot bases for current object 
+		// with index i in m_objectPolyList
+		m_graspCubeToBaseMap[current_object_index] = graspRobotBase_list;
+		current_object_index++;
+
+		for (int o = 0; o < graspRobotBase_list.size(); o++) {
+			mm_scene->addEllipse(graspRobotBase_list[o].get<0>() - ROBOT_RADIUS, graspRobotBase_list[o].get<1>() - ROBOT_RADIUS, ROBOT_RADIUS*2 , ROBOT_RADIUS*2, vertexPen);
+
 		}
 
 	}
@@ -2521,7 +3384,11 @@ std::vector<Polygon_2> Roadmap::checkLineCollision(Linestring_2 shortest_line, P
 }
 
 std::map<int, graspDist> Roadmap::getAllObjects(Polygon2_list obs_list, Polygon2_list obs_outer_list , planner_t& planner) {
+#ifdef SPECIAL_STRUCTURE
+	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 	std::map<int, graspDist> result;
 	for (auto obj = graspCubeToBaseMap.begin(); obj != graspCubeToBaseMap.end(); obj++) {
 		if (obj->second.size() == 0) {
@@ -2689,7 +3556,11 @@ std::map<int, graspDist> Roadmap::getCandidateObjectsFromExit(Polygon2_list obs_
 }
 
 std::map<int, graspDist> Roadmap::getCandidateObjects(Polygon2_list obs_list, Polygon2_list obs_outer_list, TreeNode* parent_node, planner_t& planner) {
+#ifdef SPECIAL_STRUCTURE
+	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 	std::vector<Point_2> grasp_poses;
 	std::map<int, graspDist> result;
 	bool use_cluster_heu = false;
@@ -2739,7 +3610,11 @@ std::map<int, graspDist> Roadmap::getCandidateObjects(Polygon2_list obs_list, Po
 		Polygon2_list target_list, target_inner_list;
 		target_list.push_back(target_obj);
 		target_inner_list.push_back(target_obj_inner);
+#ifdef SPECIAL_STRUCTURE
+		std::map<int, std::vector<Point_2>> target_grasps = new_findGraspablePoses_structure(target_inner_list, target_list);
+#else
 		std::map<int, std::vector<Point_2>> target_grasps = new_findGraspablePoses(target_inner_list, target_list);
+#endif
 		double shortestDist = 1000000;
 		Point_2 real_shortest_pt;
 #ifndef HAVE_OBS
@@ -3146,7 +4021,11 @@ double Roadmap::declutterMultiExitGreedy() {
 		obj_index = 0;
 		nearest_dist = 10000000;
 		//std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
+#ifdef SPECIAL_STRUCTURE
+		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 		//Environment  *env;
 		//Visibility_Graph *v_graph;
 		//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
@@ -3344,7 +4223,11 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 	int current_exit_index = 0;
 	int next_exit_index = 0;
 	int total_left_num = obs_list.size();
+#ifdef SPECIAL_STRUCTURE
+	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 	std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 	//Environment  *env;
 	//Visibility_Graph *v_graph;
 	//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
@@ -3417,7 +4300,11 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 					//std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
 					//std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(exit_vector[current_exit_index], exit_outer_vector[current_exit_index]);
 					graspCubeToBaseMap.clear();
+#ifdef SPECIAL_STRUCTURE
+					std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 					std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 					int obs_global_index = 0;
 					//Environment  *env;
 					//Visibility_Graph *v_graph;
@@ -3920,16 +4807,19 @@ double Roadmap::declutterMultiExitSeparateGreedy() {
 double Roadmap::declutterUsingGreedy(){
 	System robot2d_1;
 	planner_t rrts_1;
+	QPen vertexPen = QPen(Qt::blue, 4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	QPen edgePen = QPen(Qt::red, 2.5, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+
 #ifdef USE_PRM
 	PRM prm_1;
 #endif
 	robot2d_1.setNumDimensions(2);
 	robot2d_1.regionOperating.setNumDimensions(2);
 #ifdef BIG_ENV
-	robot2d_1.regionOperating.center[0] = 2500.0;
-	robot2d_1.regionOperating.center[1] = 2500.0;
-	robot2d_1.regionOperating.size[0] = 5000.0;
-	robot2d_1.regionOperating.size[1] = 5000.0;
+	robot2d_1.regionOperating.center[0] = 1250.0;
+	robot2d_1.regionOperating.center[1] = 1250.0;
+	robot2d_1.regionOperating.size[0] = 2500.0;
+	robot2d_1.regionOperating.size[1] = 2500.0;
 #endif
 #ifdef SMALL_ENV
 	robot2d_1.regionOperating.center[0] = 500.0;
@@ -4005,6 +4895,14 @@ double Roadmap::declutterUsingGreedy(){
 	// 	rrts_1.iteration();
 #endif
 	//generateComb(5);
+	/* 
+	for (auto p = rrts_1.listVertices.begin(); p != rrts_1.listVertices.end(); p++) {
+		mm_scene->addEllipse((*p)->getState()[0], (*p)->getState()[1], 0.6, 0.6, vertexPen);
+		if ((*p)->parent != NULL) {
+			mm_scene->addLine((*p)->getState()[0], (*p)->getState()[1], (*p)->parent->getState()[0], (*p)->parent->getState()[1], edgePen);
+		}
+	}
+	*/
 
 	std::vector<int> picking_sequence;
 
@@ -4024,7 +4922,11 @@ double Roadmap::declutterUsingGreedy(){
 		obj_index = 0;
 		nearest_dist = 10000000;
 		std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
+#ifdef SPECIAL_STRUCTURE
+		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 		Environment  *env;
 		Visibility_Graph *v_graph;
 		//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
@@ -4050,6 +4952,10 @@ double Roadmap::declutterUsingGreedy(){
 #ifdef USE_RRT
 				double temp_dist = new_computeShortestPath(START_X, START_Y, grasp_poses[j].get<0>(), grasp_poses[j].get<1>(), path, rrts_1);
 #endif
+				//std::cout << "path:" << std::endl;
+				//for (auto p = path.begin(); p != path.end(); p++) {
+				//	std::cout << "(" << p->get<0>() << "," << p->get<1>() << "),";
+				//}
 				//std::cout << "temp_dist:" << temp_dist << " pose:"<< grasp_poses[j].get<0>()<<","<<grasp_poses[j].get<1>()<<std::endl;
 				if (temp_dist < nearest_dist) {
 					nearest_dist = temp_dist;
@@ -4205,7 +5111,11 @@ double Roadmap::declutterUsingLocalGreedy(Polygon2_list obs_list, Polygon2_list 
 		obj_index = 0;
 		nearest_dist = 10000000;
 		std::cout << "obstacle size:" << obs_outer_list.size() << std::endl;
+#ifdef SPECIAL_STRUCTURE
+		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses_structure(obs_list, obs_outer_list);
+#else
 		std::map<int, std::vector<Point_2>> graspCubeToBaseMap = new_findGraspablePoses(obs_list, obs_outer_list);
+#endif
 		Environment  *env;
 		Visibility_Graph *v_graph;
 		//new_buildVisibilityGraph(obs_outer_list, env, v_graph);
@@ -9001,8 +9911,12 @@ double Roadmap::new_computeShortestPath(double x1, double y1, double x2, double 
 	//else {
 	//	return 1000000000;
 	//}
-	if (planner.connect(target, result_dist) > 0) {
-	 	return result_dist;
+	std::vector<std::pair<double, double>> path_vector;
+	if (planner.connect(target, result_dist, path_vector) > 0) {
+		for (int i = 0; i < path_vector.size(); i++) {
+			path.push_back(Point_2(path_vector[i].first, path_vector[i].second));
+		}
+		return result_dist;
 	}
 	else {
 	 	return 100000000;

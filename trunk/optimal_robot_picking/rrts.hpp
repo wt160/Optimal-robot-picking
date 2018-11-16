@@ -830,7 +830,7 @@ RRTstar::Planner<State, Trajectory, System>
 template<class State, class Trajectory, class System>
 int
 RRTstar::Planner<State, Trajectory, System>
-::connect(State target, double& dist) {
+::connect(State target, double& dist, std::vector<std::pair<double, double>>& path) {
 	std::vector< Vertex<State, Trajectory, System>* > vectorNearVertices;
 	getNearVertices(target, vectorNearVertices);
 	
@@ -856,6 +856,11 @@ RRTstar::Planner<State, Trajectory, System>
 	}
 
 	dist = trajectory.evaluateCost() + vertexParent->getCost();
+	path.push_back(std::make_pair<double, double>(vertexParent->getState()[0], vertexParent->getState()[1]));
+	while (vertexParent->parent != NULL) {
+		vertexParent = vertexParent->parent;
+		path.push_back(std::make_pair<double, double>(vertexParent->getState()[0], vertexParent->getState()[1]));
+	}
 	return 1;
 }
 
@@ -871,7 +876,10 @@ RRTstar::Planner<State, Trajectory, System>
 	
     // 1. Sample a new state
     State stateRandom;
-    system->sampleState (stateRandom);    
+	if (abs(system->sampleState(stateRandom) - 0.0)<0.001) {
+		std::cout << "In Collision !!!!!" << std::endl;
+		return 0;
+	}
     
     // 2. Compute the set of all near vertices
     std::vector< Vertex<State,Trajectory,System>* > vectorNearVertices;

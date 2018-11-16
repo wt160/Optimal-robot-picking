@@ -63,6 +63,7 @@ void optimalRatioTest();
 void optimalLossTest();
 void addIntoEnv(Polygon_2 tp, int index);
 Polygon_2 addNewNearPoly(std::vector<Polygon_2> exist_polys, std::vector<Polygon_2> all_created_polys);
+Polygon_2 addNewNearTetris(std::vector<Polygon_2> exist_polys, std::vector<Polygon_2> all_created_polys);
 bool isTwoPolyTooClose(Polygon_2 a, Polygon_2 b);
 public slots:
     void openEnvironment();

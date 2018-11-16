@@ -369,6 +369,8 @@ pair<double, double> getCurveMidPoint(Point_2 start, Point_2 end, Point_2 after)
 	double visi_computeShortestPath(double x1, double y1, double x2, double y2, std::list<Point_2> & path, Environment * env, Visibility_Graph *v_graph);
 	double new_computeShortestPath_1(double x1, double y1, double x2, double y2, std::list<Point_2> & path);
 	double new_computeShortestPath(double x1, double y1, double x2, double y2, std::list<Point_2> & path, planner_t & planner);
+	void findGraspablePoses_structure();
+	std::map<int, std::vector<Point_2>> new_findGraspablePoses_structure(Polygon2_list obs_list, Polygon2_list obs_outer_list);
 
 	double declutterUsingMultipleGreedy(int num_objs);
 	std::map<int, graspDist> getAllObjects(Polygon2_list obs_list, Polygon2_list obs_outer_list, planner_t& planner);

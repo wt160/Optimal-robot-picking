@@ -549,7 +549,7 @@ void MainWindow::openEnvironment(){
     m_pBoundingPolyAGI->m_bFill = false;
     m_pBoundingPolyAGI->m_bShowVertices = false;
     m_pBoundingPolyAGI->m_bShowEdge = true;
-	m_pBoundingPolyAGI->m_edgePen = QPen(Qt::gray, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	m_pBoundingPolyAGI->m_edgePen = QPen(Qt::red, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     m_PolyAGIList.push_back(m_pBoundingPolyAGI);
     // m_scene.addItem(m_pBoundingPolyAGI);
 
@@ -570,7 +570,7 @@ void MainWindow::openEnvironment(){
     m_pBoundingPolyAGI2->m_bFill = false;
     m_pBoundingPolyAGI2->m_bShowVertices = false;
     m_pBoundingPolyAGI2->m_bShowEdge = true;
-	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 0.25, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::red, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     m_PolyAGIList.push_back(m_pBoundingPolyAGI2);
     // m_scene.addItem(m_pBoundingPolyAGI2);
 
@@ -983,7 +983,7 @@ void MainWindow::drawBasicEnvironment(){
     m_pBoundingPolyAGI->m_bFill = false;
     m_pBoundingPolyAGI->m_bShowVertices = false;
     m_pBoundingPolyAGI->m_bShowEdge = true;
-	m_pBoundingPolyAGI->m_edgePen = QPen(Qt::gray, 0.25, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	m_pBoundingPolyAGI->m_edgePen = QPen(Qt::gray, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     m_PolyAGIList.push_back(m_pBoundingPolyAGI);
 
 	// Add to scene
@@ -991,7 +991,7 @@ void MainWindow::drawBasicEnvironment(){
     m_pBoundingPolyAGI2->m_bFill = false;
     m_pBoundingPolyAGI2->m_bShowVertices = false;
     m_pBoundingPolyAGI2->m_bShowEdge = true;
-	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 0.25, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     m_PolyAGIList.push_back(m_pBoundingPolyAGI2);
 
 	for(std::vector<AdvancedGraphicsItem<Polygon_2> *>::iterator pagiItor = m_PolyAGIList.begin();
@@ -1385,12 +1385,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 	Segment_2 border_1, border_2, border_3, border_4;
 #ifdef BIG_ENV
 	border_1.first = Point_2(0, 0);
-	border_1.second = Point_2(5000, 0);
-	border_2.first = Point_2(5000, 0);
-	border_2.second = Point_2(5000, 5000);
-	border_3.first = Point_2(5000, 5000);
-	border_3.second = Point_2(0, 5000);
-	border_4.first = Point_2(0, 5000);
+	border_1.second = Point_2(2000, 0);
+	border_2.first = Point_2(2000, 0);
+	border_2.second = Point_2(2000, 2000);
+	border_3.first = Point_2(2000, 2000);
+	border_3.second = Point_2(0, 2000);
+	border_4.first = Point_2(0, 2000);
 	border_4.second = Point_2(0, 0);
 
 #endif
@@ -1445,6 +1445,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 		while (!is_valid) {
 			new_poly.outer().clear();
 			is_valid = true;
+			if (distribution(engine) / 10000. < 0.5) {
+				yaw = 1.57;
+			}
+			else {
+				yaw = 0;
+			}
 			double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
 			Point_2 origin;
 			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1501,12 +1507,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 				}
 #endif
 #ifdef BIG_ENV
-				if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+				if (bg::distance(new_poly, Point_2(1000, 2000)) < 40) {
 					is_valid = false;
 				}
 #endif
 #ifdef BIG_ENV
-				if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+				if (new_poly.outer()[0].get<1>() > 2000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 2000 || new_poly.outer()[0].get<0>() < 0) {
 					is_valid = false;
 				}
 #endif
@@ -1524,7 +1530,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 	else if (exist_polys.size() == 2) {
 		Point_2 upper_left, upper_right, down_left, down_right;
 		Polygon_2 outer_poly_1, outer_poly_2;
-
+		if (distribution(engine) / 10000. < 0.5) {
+			yaw = 1.57;
+		}
+		else {
+			yaw = 0;
+		}
 		getBoundingPoly(exist_polys[0], upper_left, upper_right, down_left, down_right, obj_between_dist);
 
 		// upper_left = exist_polys[0].outer()[1];
@@ -1596,6 +1607,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 			bool is_valid = false;
 			while (!is_valid) {
 
+				if (distribution(engine) / 10000. < 0.5) {
+					yaw = 1.57;
+				}
+				else {
+					yaw = 0;
+				}
 				double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
 				Point_2 origin;
 				origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1665,12 +1682,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 					}
 #endif
 #ifdef BIG_ENV
-					if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+					if (bg::distance(new_poly, Point_2(1000, 2000)) < 40) {
 						is_valid = false;
 					}
 #endif
 #ifdef BIG_ENV
-					if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+					if (new_poly.outer()[0].get<1>() > 2000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 2000 || new_poly.outer()[0].get<0>() < 0) {
 						is_valid = false;
 					}
 #endif
@@ -1748,10 +1765,21 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 			outer_poly_vector.pop_back();
 		}
 		bool is_valid = false;
+		int trial_num = 0;
 		while (!is_valid) {
-
+			std::cout << "trial_num:" << trial_num << std::endl;
+			trial_num++;
+			if (trial_num > 4000) {
+				Polygon_2 null_poly;
+				return null_poly;
+			}
 			double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
-
+			if (distribution(engine) / 10000. < 0.5) {
+				yaw = 1.57;
+			}
+			else {
+				yaw = 0;
+			}
 			//srand(rand()%10000);
 			Point_2 origin;
 			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1801,6 +1829,7 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 				for (int t = 0; t < exist_polys.size(); t++) {
 					if (bg::intersects(exist_polys[t], new_poly)) {
 						is_valid = false;
+						std::cout << "1" << std::endl;
 						break;
 					}
 					if (isTwoPolyTooClose(exist_polys[t], new_poly)) {
@@ -1812,6 +1841,7 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 				for (int p = 0; p < all_created_polys.size(); p++) {
 					if (bg::intersects(all_created_polys[p], new_poly)) {
 						is_valid = false;
+						std::cout << "2" << std::endl;
 						break;
 					}
 				}
@@ -1821,12 +1851,12 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 				}
 #endif
 #ifdef BIG_ENV
-				if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+				if (bg::distance(new_poly, Point_2(1000, 2000)) < 40) {
 					is_valid = false;
 				}
 #endif
 #ifdef BIG_ENV
-				if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+				if (new_poly.outer()[0].get<1>() > 2000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 2000 || new_poly.outer()[0].get<0>() < 0) {
 					is_valid = false;
 				}
 #endif
@@ -2369,34 +2399,34 @@ void MainWindow::createRandomProblem() {
 	yaw_min = -1.57;
 #ifdef BIG_ENV
 	if (numberOfPolygons == 5) {
-		x_min = 1000;
+		x_min = 500;
 		x_max = 1500;
-		y_min = 1000;
+		y_min = 500;
 		y_max = 1500;
 	}
 	else if (numberOfPolygons == 10) {
-		x_min = 1000;
-		x_max = 1500;
-		y_min = 1000;
-		y_max = 1500;
+		x_min = 300;
+		x_max = 1700;
+		y_min = 300;
+		y_max = 1700;
 	}
 	else if (numberOfPolygons == 15) {
-		x_min = 600;
-		x_max = 1900;
-		y_min = 600;
-		y_max = 1900;
+		x_min = 200;
+		x_max = 1800;
+		y_min = 200;
+		y_max = 1800;
 	}
 	else if (numberOfPolygons == 20) {
-		x_min = 600;
+		x_min = 100;
 		x_max = 1900;
-		y_min = 600;
+		y_min = 100;
 		y_max = 1900;
 	}
 	else if (numberOfPolygons == 25) {
-		x_min = 500;
-		x_max = 2000;
-		y_min = 500;
-		y_max = 2000;
+		x_min = 700;
+		x_max = 1300;
+		y_min = 700;
+		y_max = 1300;
 	}
 	else if (numberOfPolygons == 30) {
 		x_min = 300;
@@ -2440,7 +2470,7 @@ void MainWindow::createRandomProblem() {
 	bool is_start_valid = true;
 	
 #ifdef MIXED_CLUSTER
-	int each_cluster_num = 25;
+	int each_cluster_num = 10;
 	int cluster_num = 0;
 	int total_obj_num = 0;
 	std::vector<int> cluster_num_list;
@@ -2527,6 +2557,17 @@ void MainWindow::createRandomProblem() {
 				exist_polys.push_back(tp);
 #ifdef SPECIAL_STRUCTURE
 				tp = addNewNearTetris(exist_polys, created_polys);
+				if (tp.outer().size() == 0) {
+					center_x = distribution(engine) / 10000.*(x_max - x_min) + x_min;
+					center_y = distribution(engine) / 10000.*(y_max - y_min) + y_min;
+					if (distribution(engine) / 10000. < 0.5) {
+						yaw = 1.57;
+					}
+					else {
+						yaw = 0;
+					}
+					generateTetrisBlock(tp, center_x, center_y, yaw, 0);
+				}
 #else
 				tp = addNewNearPoly(exist_polys, created_polys);
 #endif
@@ -2549,12 +2590,12 @@ void MainWindow::createRandomProblem() {
 	bg::append(m_boundingPoly.outer(), p);
 #ifdef BIG_ENV
 	p.set<0>(0);
-	p.set<1>(2500);
+	p.set<1>(2000);
 	bg::append(m_boundingPoly.outer(), p);
-	p.set<0>(2500);
-	p.set<1>(2500);
+	p.set<0>(2000);
+	p.set<1>(2000);
 	bg::append(m_boundingPoly.outer(), p);
-	p.set<0>(2500);
+	p.set<0>(2000);
 	p.set<1>(0);
 #endif
 #ifdef SMALL_ENV
@@ -2601,7 +2642,7 @@ void MainWindow::createRandomProblem() {
 	m_pBoundingPolyAGI2->m_edgePen = QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 	m_PolyAGIList.push_back(m_pBoundingPolyAGI2);
 	// m_scene.addItem(m_pBoundingPolyAGI2);
-	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/tetris/";
+	std::string output_filename = "C:/Users/wei/Desktop/optimal_robot_picking/trunk/optimal_robot_picking/test-envs/testcases/2500_env/tetris/";
 
 	std::ofstream ofs(output_filename + std::to_string((long long)numberOfPolygons)  + "_"+ std::to_string((long long)current_case) + ".txt", std::ofstream::out);
 	ofs << 30 << std::endl;
@@ -2615,9 +2656,9 @@ void MainWindow::createRandomProblem() {
 	ofs << 4 << std::endl;
 #ifdef BIG_ENV
 	ofs << 0 << " " << 0 << std::endl;
-	ofs << 0 << " " << 2500 << std::endl;
-	ofs << 2500 << " " << 2500 << std::endl;
-	ofs << 2500 << " " << 0 << std::endl;
+	ofs << 0 << " " << 2000 << std::endl;
+	ofs << 2000 << " " << 2000 << std::endl;
+	ofs << 2000 << " " << 0 << std::endl;
 #endif
 #ifdef SMALL_ENV
 	ofs << 0 << " " << 0 << std::endl;

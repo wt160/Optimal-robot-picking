@@ -2069,8 +2069,8 @@ std::map<int, std::vector<Point_2>> Roadmap::new_findGraspablePoses_structure(Po
 			bar_1.set<1>((current_pts[0].get<1>() + current_pts[7].get<1>()) / 2.0 - 10 * primary_axis_y);
 			grasp_center_pts.push_back(bar_1);
 
-			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * primary_axis_x);
-			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * primary_axis_y);
+			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * second_axis_x);
+			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * second_axis_y);
 			grasp_center_pts.push_back(bar_2);
 
 			bar_3.set<0>((current_pts[5].get<0>() + current_pts[6].get<0>()) / 2.0 + 10 * primary_axis_x);
@@ -2978,8 +2978,8 @@ void Roadmap::findGraspablePoses_structure() {
 			bar_1.set<1>((current_pts[0].get<1>() + current_pts[7].get<1>()) / 2.0 - 10 * primary_axis_y);
 			grasp_center_pts.push_back(bar_1);
 
-			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * primary_axis_x);
-			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * primary_axis_y);
+			bar_2.set<0>((current_pts[2].get<0>() + current_pts[3].get<0>()) / 2.0 + 10 * second_axis_x);
+			bar_2.set<1>((current_pts[2].get<1>() + current_pts[3].get<1>()) / 2.0 + 10 * second_axis_y);
 			grasp_center_pts.push_back(bar_2);
 
 			bar_3.set<0>((current_pts[5].get<0>() + current_pts[6].get<0>()) / 2.0 + 10 * primary_axis_x);

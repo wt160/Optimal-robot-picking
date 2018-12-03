@@ -1363,7 +1363,7 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 	yaw = 0;
 #else
 	if (distribution(engine) / 10000. < 0.5) {
-		yaw = 1.57;
+		yaw = -1.57;
 	}
 	else {
 		yaw = 0;
@@ -1446,7 +1446,7 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 			new_poly.outer().clear();
 			is_valid = true;
 			if (distribution(engine) / 10000. < 0.5) {
-				yaw = 1.57;
+				yaw = -1.57;
 			}
 			else {
 				yaw = 0;
@@ -2405,16 +2405,16 @@ void MainWindow::createRandomProblem() {
 		y_max = 1500;
 	}
 	else if (numberOfPolygons == 10) {
-		x_min = 300;
-		x_max = 1700;
-		y_min = 300;
-		y_max = 1700;
+		x_min = 800;
+		x_max = 1200;
+		y_min = 800;
+		y_max = 1200;
 	}
 	else if (numberOfPolygons == 15) {
-		x_min = 200;
-		x_max = 1800;
-		y_min = 200;
-		y_max = 1800;
+		x_min = 700;
+		x_max = 1300;
+		y_min = 700;
+		y_max = 1300;
 	}
 	else if (numberOfPolygons == 20) {
 		x_min = 100;
@@ -2561,7 +2561,7 @@ void MainWindow::createRandomProblem() {
 					center_x = distribution(engine) / 10000.*(x_max - x_min) + x_min;
 					center_y = distribution(engine) / 10000.*(y_max - y_min) + y_min;
 					if (distribution(engine) / 10000. < 0.5) {
-						yaw = 1.57;
+						yaw = -1.57;
 					}
 					else {
 						yaw = 0;

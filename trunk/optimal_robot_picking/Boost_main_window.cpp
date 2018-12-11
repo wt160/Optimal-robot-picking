@@ -1351,7 +1351,7 @@ bool MainWindow::isTwoPolyTooClose(Polygon_2 a, Polygon_2 b) {
 Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::vector<Polygon_2> all_created_polys) {
 	double yaw;
 	double length = 145;
-	double obj_between_dist = 15;
+	double obj_between_dist = 50;
 	//srand(time(NULL));
 	double width = 30;
 	Polygon_2 new_poly;
@@ -1451,6 +1451,9 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 			else {
 				yaw = 0;
 			}
+#ifdef NOT_AXIS_ALIGNED
+			yaw = distribution(engine) / 10000. * 3.14;
+#endif
 			double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
 			Point_2 origin;
 			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1536,6 +1539,9 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 		else {
 			yaw = 0;
 		}
+#ifdef NOT_AXIS_ALIGNED
+		yaw = distribution(engine) / 10000. * 3.14;
+#endif
 		getBoundingPoly(exist_polys[0], upper_left, upper_right, down_left, down_right, obj_between_dist);
 
 		// upper_left = exist_polys[0].outer()[1];
@@ -1613,6 +1619,9 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 				else {
 					yaw = 0;
 				}
+#ifdef NOT_AXIS_ALIGNED
+				yaw = distribution(engine) / 10000. * 3.14;
+#endif
 				double rotation = distribution(engine) / 10000. *(3.14 + 3.14) - 3.14;
 				Point_2 origin;
 				origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1780,6 +1789,9 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 			else {
 				yaw = 0;
 			}
+#ifdef NOT_AXIS_ALIGNED
+			yaw = distribution(engine) / 10000. * 3.14;
+#endif
 			//srand(rand()%10000);
 			Point_2 origin;
 			origin.set<0>((upper_left.get<0>() + upper_right.get<0>()) / 2);
@@ -1881,7 +1893,7 @@ Polygon_2 MainWindow::addNewNearTetris(std::vector<Polygon_2> exist_polys, std::
 Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::vector<Polygon_2> all_created_polys) {
 	double yaw;
 	double length = 145;
-	double obj_between_dist = 15;
+	double obj_between_dist = 80;
 	//srand(time(NULL));
 	double width = 30;
 	Polygon_2 new_poly;
@@ -1904,12 +1916,12 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 	Segment_2 border_1, border_2, border_3, border_4;
 #ifdef BIG_ENV
 	border_1.first = Point_2(0, 0);
-	border_1.second = Point_2(5000, 0);
-	border_2.first = Point_2(5000, 0);     
-	border_2.second = Point_2(5000, 5000);
-	border_3.first = Point_2(5000, 5000);
-	border_3.second = Point_2(0, 5000);
-	border_4.first = Point_2(0, 5000);
+	border_1.second = Point_2(2000, 0);
+	border_2.first = Point_2(2000, 0);     
+	border_2.second = Point_2(2000, 2000);
+	border_3.first = Point_2(2000, 2000);
+	border_3.second = Point_2(0, 2000);
+	border_4.first = Point_2(0, 2000);
 	border_4.second = Point_2(0, 0);
 
 #endif
@@ -2008,24 +2020,26 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 					if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
 						is_valid = false;
 					}
+#ifndef STACK
 					for (int p = 0; p < all_created_polys.size(); p++) {
 						if (bg::intersects(all_created_polys[p], new_poly)) {
 							is_valid = false;
 							break;
 						}
 					}
+#endif
 #ifdef SMALL_ENV
 					if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
 						is_valid = false;
 					}
 #endif
 #ifdef BIG_ENV
-					if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+					if (bg::distance(new_poly, Point_2(1000, 2000)) < 40) {
 						is_valid = false;
 					}
 #endif
 #ifdef BIG_ENV
-					if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+					if (new_poly.outer()[0].get<1>() > 2000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 2000 || new_poly.outer()[0].get<0>() < 0) {
 						is_valid = false;
 					}
 #endif
@@ -2160,6 +2174,7 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 				if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
 					is_valid = false;
 				}
+#ifndef STACK
 				for (int t = 0; t < exist_polys.size(); t++) {
 					if (bg::intersects(exist_polys[t], new_poly)) {
 						is_valid = false;
@@ -2177,18 +2192,19 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 						break;
 					}
 				}
+#endif
 #ifdef SMALL_ENV
 				if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
 					is_valid = false;
 				}
 #endif
 #ifdef BIG_ENV
-				if (bg::distance(new_poly, Point_2(2500, 5000)) < 40) {
+				if (bg::distance(new_poly, Point_2(1000, 2000)) < 40) {
 					is_valid = false;
 				}
 #endif
 #ifdef BIG_ENV
-				if (new_poly.outer()[0].get<1>() > 5000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 5000 || new_poly.outer()[0].get<0>() < 0) {
+				if (new_poly.outer()[0].get<1>() > 2000 || new_poly.outer()[0].get<1>() < 0 || new_poly.outer()[0].get<0>() > 2000 || new_poly.outer()[0].get<0>() < 0) {
 					is_valid = false;
 				}
 #endif
@@ -2315,6 +2331,7 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 				if (bg::intersects(new_poly, border_1) || bg::intersects(new_poly, border_2) || bg::intersects(new_poly, border_3) || bg::intersects(new_poly, border_4)) {
 					is_valid = false;
 				}
+#ifndef STACK
 				for (int t = 0; t < exist_polys.size(); t++) {
 					if (bg::intersects(exist_polys[t], new_poly)) {
 						is_valid = false;
@@ -2332,6 +2349,7 @@ Polygon_2 MainWindow::addNewNearPoly(std::vector<Polygon_2> exist_polys, std::ve
 						break;
 					}
 				}
+#endif
 #ifdef SMALL_ENV
 				if (bg::distance(new_poly, Point_2(500, 1000)) < 40) {
 					is_valid = false;
@@ -2417,16 +2435,16 @@ void MainWindow::createRandomProblem() {
 		y_max = 1300;
 	}
 	else if (numberOfPolygons == 20) {
-		x_min = 100;
-		x_max = 1900;
-		y_min = 100;
-		y_max = 1900;
-	}
-	else if (numberOfPolygons == 25) {
 		x_min = 700;
 		x_max = 1300;
 		y_min = 700;
 		y_max = 1300;
+	}
+	else if (numberOfPolygons == 25) {
+		x_min = 200;
+		x_max = 1800;
+		y_min = 500;
+		y_max = 1900;
 	}
 	else if (numberOfPolygons == 30) {
 		x_min = 300;
@@ -2470,7 +2488,7 @@ void MainWindow::createRandomProblem() {
 	bool is_start_valid = true;
 	
 #ifdef MIXED_CLUSTER
-	int each_cluster_num = 10;
+	int each_cluster_num = 5;
 	int cluster_num = 0;
 	int total_obj_num = 0;
 	std::vector<int> cluster_num_list;
@@ -2490,7 +2508,7 @@ void MainWindow::createRandomProblem() {
 	}
 	
 #else
-	int each_cluster_num = 1;
+	int each_cluster_num = 5;
 	int cluster_num = numberOfPolygons / each_cluster_num;
 	if (cluster_num * each_cluster_num < numberOfPolygons) {
 		cluster_num++;
@@ -2536,13 +2554,14 @@ void MainWindow::createRandomProblem() {
 			generatePoly(tp, center_x, center_y, yaw);
 #endif
 #endif
+#ifndef STACK
 			for (auto p = created_polys.begin(); p != created_polys.end(); p++) {
 				if (bg::intersects(tp, *p)) {
 					isValid = false;
 					break;
 				}
 			}
-			
+#endif
 
 			if (!isValid) {
 				continue;
